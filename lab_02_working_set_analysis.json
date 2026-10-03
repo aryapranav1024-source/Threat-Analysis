@@ -1,0 +1,56 @@
+{
+  "dataset": "https://github.com/jacobdjwilson/awesome-annual-security-reports/",
+  "total_documents": 100000,
+  "doc_avg_size_bytes": 2223,
+  "wiredtiger_cache": {
+    "max_bytes": 7898923008,
+    "max_mb": 7533.0,
+    "in_use_bytes": 339524271,
+    "in_use_mb": 323.79557704925537,
+    "collection_data_mb": 212.04085540771484,
+    "collection_storage_mb": 14.82421875,
+    "fits_in_cache": true
+  },
+  "phase_observations": [
+    {
+      "phase": 1,
+      "queries": 5000,
+      "delta_pages_read": 8,
+      "delta_pages_evicted": 0,
+      "hit_ratio_pct": 99.84,
+      "duration_sec": 2.14
+    },
+    {
+      "phase": 2,
+      "queries": 5000,
+      "delta_pages_read": 0,
+      "delta_pages_evicted": 0,
+      "hit_ratio_pct": 100.0,
+      "duration_sec": 1.93
+    },
+    {
+      "phase": 3,
+      "queries": 5000,
+      "delta_pages_read": 0,
+      "delta_pages_evicted": 0,
+      "hit_ratio_pct": 100.0,
+      "duration_sec": 1.94
+    },
+    {
+      "phase": 4,
+      "queries": 5000,
+      "delta_pages_read": 0,
+      "delta_pages_evicted": 0,
+      "hit_ratio_pct": 100.0,
+      "duration_sec": 2.11
+    },
+    {
+      "phase": 5,
+      "queries": 5000,
+      "delta_pages_read": 0,
+      "delta_pages_evicted": 0,
+      "hit_ratio_pct": 100.0,
+      "duration_sec": 2.64
+    }
+  ]
+}

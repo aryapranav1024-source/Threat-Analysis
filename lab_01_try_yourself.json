@@ -1,0 +1,19 @@
+{
+  "activity": "7.1 Try It Yourself",
+  "read_benchmark": {
+    "iterations": 500,
+    "referenced_time_sec": 21.963,
+    "referenced_avg_ms": 43.9261,
+    "embedded_time_sec": 0.3038,
+    "embedded_avg_ms": 0.6076,
+    "speedup_factor": 72.29
+  },
+  "write_benchmark": {
+    "iterations": 200,
+    "referenced_write_sec": 0.1182,
+    "referenced_avg_ms": 0.5911,
+    "embedded_write_sec": 0.1804,
+    "embedded_avg_ms": 0.9019,
+    "write_slowdown_factor": 1.53
+  }
+}
