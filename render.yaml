@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: threat-analysis
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGO_URI
+        sync: false          # You will paste this from MongoDB Atlas
+      - key: VIRUSTOTAL_API_KEY
+        sync: false          # Your VT key
+      - key: PYTHON_VERSION
+        value: 3.11.0

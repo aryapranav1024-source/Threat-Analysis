@@ -67,6 +67,22 @@ def serialize_doc(doc):
     return doc
 
 
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    """Auto-seed database on first cloud deploy if collections are empty."""
+    if db["sources"].count_documents({}) == 0:
+        try:
+            import subprocess, sys as _sys
+            subprocess.run([_sys.executable, "seed_cti_data.py"], timeout=180, cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        except Exception as e:
+            print(f"[WARNING] Auto-seed failed: {e}")
+    yield
+
+app.router.lifespan_context = lifespan
+
+
 # ── Health & Overview ───────────────────────────────────────────────
 @app.get("/api/health")
 def get_health():
