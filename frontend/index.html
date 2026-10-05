@@ -3,228 +3,463 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThreatAnalysis · Cyber Threat Intelligence &amp; Working Set Analysis</title>
+  <title>ThreatAnalysis · SOC Command Center &amp; Database Telemetry</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-  <!-- ─── HEADER ─── -->
-  <header>
-    <div class="header-inner">
-      <div class="logo" onclick="switchTab('news')">
-        <div class="logo-mark">
-          <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
-            <path d="M7 1L12 3.8V10.2L7 13L2 10.2V3.8L7 1Z" stroke="hsl(210,100%,60%)" stroke-width="1.2"/>
-            <circle cx="7" cy="7" r="2" fill="hsl(210,100%,60%)"/>
-          </svg>
-        </div>
-        <span class="logo-text">Threat<span class="accent">Analysis</span></span>
-      </div>
-
-      <div class="header-live">
-        <div class="live-dot"></div>
-        LIVE TELEMETRY
-      </div>
-
-      <span class="header-meta" id="header-status" style="margin-left:14px;">Connecting to MongoDB...</span>
-
-      <div class="header-right">
-        <span class="header-meta" id="last-updated">--:--</span>
-        <button class="btn" style="border-color:hsl(210,100%,60%);color:hsl(210,100%,60%);" onclick="openVTModal()">VirusTotal API</button>
-        <button class="btn" onclick="toggleTheme()">Theme</button>
-      </div>
-    </div>
-  </header>
-
-  <!-- ─── NAVIGATION TABS ─── -->
-  <nav class="nav-tabs">
-    <div class="nav-tabs-inner">
-      <button class="nav-tab active" data-tab="news">Threat Intelligence Feed</button>
-      <button class="nav-tab" data-tab="classifier">Threat Classifier & Extractor</button>
-      <button class="nav-tab" data-tab="iocs">IOC Database</button>
-      <button class="nav-tab" data-tab="lab1">Lab 7.1: Production Schema</button>
-      <button class="nav-tab" data-tab="lab2">Lab 7.2: Working Set & Cache</button>
-      <button class="nav-tab" data-tab="sources">Sources (29 Feeds)</button>
-    </div>
-  </nav>
-
-  <!-- ════════════════════════════════════════════
-       TAB 1: THREAT INTELLIGENCE FEED
-  ════════════════════════════════════════════ -->
-  <main class="page active" id="page-news">
-    <div class="page-inner">
-      <div class="controls-bar">
-        <div class="search-box">
-          <svg width="14" height="14" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="5.5" cy="5.5" r="4"/><path d="M8.5 8.5L12 12"/>
-          </svg>
-          <input type="text" class="search-input" id="search-input" placeholder="Search threats, CVEs, ransomware, threat actors..." oninput="onSearchInput(this.value)">
-        </div>
-
-        <select class="select-input" id="sev-filter" onchange="onSeverityChange(this.value)">
-          <option value="all">All Severities</option>
-          <option value="CRITICAL">Critical Severity</option>
-          <option value="HIGH">High Severity</option>
-          <option value="MEDIUM">Medium Severity</option>
-          <option value="LOW">Low Severity</option>
-        </select>
-
-        <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-left:auto;" id="article-count-label">Loading reports...</span>
-      </div>
-
-      <div class="category-strip" id="category-strip"></div>
-
-      <div class="articles-grid" id="articles-grid"></div>
-
-      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:32px;" id="pagination"></div>
-    </div>
-  </main>
-
-  <!-- ════════════════════════════════════════════
-       TAB 2: THREAT CLASSIFIER & EXTRACTOR
-  ════════════════════════════════════════════ -->
-  <main class="page" id="page-classifier">
-    <div class="page-inner">
-      <div class="section-panel">
-        <h3>Real-Time Threat Classification & Heuristic Analyzer</h3>
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
-          Paste raw incident response alerts, darknet chatter, or security bulletins. The classification engine extracts CVEs, indicators of compromise, attributes threat actors, and assesses severity scores.
-        </p>
-
-        <div style="margin-bottom:12px;">
-          <input type="text" class="search-input" id="classify-title" placeholder="Advisory / Threat Title (Optional)" style="max-width:100%;margin-bottom:10px;">
-          <textarea class="input-area" id="classify-text" placeholder="Paste advisory text, threat bulletin, exploit analysis, or IOC list..."></textarea>
-        </div>
-
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <button class="btn btn-primary" onclick="runClassifier()">Analyze & Classify Threat</button>
-          <span style="font-size:11px;color:var(--text-dim);font-family:var(--mono);">Or load sample:</span>
-          <button class="btn" onclick="loadSampleThreat('lockbit')">LockBit ScreenConnect 0-Day</button>
-          <button class="btn" onclick="loadSampleThreat('sandworm')">Sandworm Kapeka Backdoor</button>
-        </div>
-
-        <div id="classify-results" style="display:none;margin-top:20px;"></div>
-      </div>
-    </div>
-  </main>
-
-  <!-- ════════════════════════════════════════════
-       TAB 3: IOC DATABASE
-  ════════════════════════════════════════════ -->
-  <main class="page" id="page-iocs">
-    <div class="page-inner">
-
-      <!-- VirusTotal Threat Intelligence Scanner Card -->
-      <div class="section-panel" style="margin-bottom:16px;">
-        <h3>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="color:var(--blue);">
-            <path d="M8 0L0 4v6c0 4.4 3.4 8.5 8 10 4.6-1.5 8-5.6 8-10V4L8 0z"/>
-          </svg>
-          VirusTotal v3 Real-Time Threat Intelligence Scanner
-        </h3>
-        <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
-          Query 70+ antivirus engines and threat intelligence vendors for IPs, domains, SHA256/MD5 hashes, and URLs.
-        </p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <input type="text" class="search-input" id="vt-scanner-input" placeholder="Enter IP (e.g. 194.26.29.112), SHA256 hash, or domain..." style="flex:1;min-width:280px;">
-          <select class="select-input" id="vt-type-select">
-            <option value="ip">IPv4 Address</option>
-            <option value="sha256">SHA256 Hash</option>
-            <option value="md5">MD5 Hash</option>
-            <option value="domain">Domain Name</option>
-            <option value="url">URL</option>
-          </select>
-          <button class="btn btn-primary" onclick="runVirusTotalScan()">Query VirusTotal</button>
-        </div>
-        <div id="vt-scan-results" style="display:none;margin-top:14px;"></div>
-      </div>
-
-      <!-- VirusTotal Enrichment Summary -->
-      <div class="section-panel" style="margin-bottom:16px;padding:12px 18px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-          <div>
-            <strong style="font-size:13px;">VirusTotal Database Enrichment</strong>
-            <div id="vt-enrichment-summary" style="margin-top:4px;color:var(--text-muted);">Loading enrichment stats...</div>
+  <div class="soc-layout">
+    
+    <!-- ════════════════════════════════════════════
+         LEFT COLLAPSIBLE SIDEBAR NAVIGATION
+    ════════════════════════════════════════════ -->
+    <aside class="soc-sidebar" id="soc-sidebar">
+      
+      <!-- Sidebar Header / Brand -->
+      <div class="sidebar-header">
+        <div class="brand-wrapper" onclick="switchTab('news')">
+          <div class="brand-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="M9 12l2 2 4-4"/>
+            </svg>
           </div>
-          <button class="btn" id="btn-bulk-vt" onclick="triggerBulkVTEnrichment()" style="font-size:11px;padding:5px 12px;">
-            🔄 Bulk Enrich All IOCs via VT
+          <div class="brand-info">
+            <div class="brand-title">Threat<span class="accent">Analysis</span> <span class="brand-badge">SOC 2.0</span></div>
+            <div class="brand-sub">Consolidated CTI Telemetry</div>
+          </div>
+        </div>
+        <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Toggle Sidebar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Live Pulse Status Banner -->
+      <div class="sidebar-status-banner">
+        <div class="status-dot"></div>
+        <span class="sidebar-status-text">SOC Engine Live</span>
+      </div>
+
+      <!-- Sidebar Navigation Menu -->
+      <nav class="sidebar-menu">
+        <div class="menu-section-label">Operations</div>
+        
+        <button class="nav-tab active" data-tab="news" onclick="switchTab('news')">
+          <div class="nav-tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 11a9 9 0 0 1 9 9"/>
+              <path d="M4 4a16 16 0 0 1 16 16"/>
+              <circle cx="5" cy="19" r="1"/>
+            </svg>
+          </div>
+          <span class="nav-tab-label">Threat Intel Feed</span>
+          <span class="nav-tab-badge" id="badge-feed-count">150</span>
+        </button>
+
+        <button class="nav-tab" data-tab="classifier" onclick="switchTab('classifier')">
+          <div class="nav-tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+              <path d="M2 12h20"/>
+            </svg>
+          </div>
+          <span class="nav-tab-label">Threat Classifier</span>
+          <span class="nav-tab-badge" style="color:var(--cyan);background:rgba(0,240,255,0.15)">NLP</span>
+        </button>
+
+        <button class="nav-tab" data-tab="iocs" onclick="switchTab('iocs')">
+          <div class="nav-tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14h-2v-2h2zm0-4h-2V7h2z"/>
+            </svg>
+          </div>
+          <span class="nav-tab-label">IOC Database</span>
+          <span class="nav-tab-badge" id="badge-ioc-count">13+</span>
+        </button>
+
+        <div class="menu-section-label" style="margin-top:10px;">Engineering Labs</div>
+
+        <button class="nav-tab" data-tab="lab1" onclick="switchTab('lab1')">
+          <div class="nav-tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+              <polyline points="2 17 12 22 22 17"/>
+              <polyline points="2 12 12 17 22 12"/>
+            </svg>
+          </div>
+          <span class="nav-tab-label">Lab 7.1: Schema Studio</span>
+          <span class="nav-tab-badge" style="color:var(--green)">$bsonSize</span>
+        </button>
+
+        <button class="nav-tab" data-tab="lab2" onclick="switchTab('lab2')">
+          <div class="nav-tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+              <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+              <line x1="6" y1="6" x2="6.01" y2="6"/>
+              <line x1="6" y1="18" x2="6.01" y2="18"/>
+            </svg>
+          </div>
+          <span class="nav-tab-label">Lab 7.2: Working Set</span>
+          <span class="nav-tab-badge" style="color:var(--blue)">100k</span>
+        </button>
+
+        <button class="nav-tab" data-tab="sources" onclick="switchTab('sources')">
+          <div class="nav-tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <span class="nav-tab-label">Threat Sources</span>
+          <span class="nav-tab-badge" id="badge-source-count">29</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Engine Footer -->
+      <div class="sidebar-footer">
+        <div class="sidebar-node-card">
+          <div class="node-title">
+            <span>MONGODB CLUSTER</span>
+            <span style="color:var(--green)">ONLINE</span>
+          </div>
+          <div class="node-meta">
+            <span>Engine: WiredTiger</span>
+            <span>Compression: Snappy</span>
+            <span>Db: cti_platform</span>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ════════════════════════════════════════════
+         MAIN SOC WORKSPACE CONTAINER
+    ════════════════════════════════════════════ -->
+    <div class="soc-main">
+
+      <!-- ─── TOP APP BAR ─── -->
+      <header class="soc-topbar">
+        <div class="topbar-left">
+          <div class="page-breadcrumb">
+            <span>SOC Console</span>
+            <span>/</span>
+            <span class="current-title" id="breadcrumb-title">Threat Intelligence Feed</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <div class="telemetry-chip" id="header-status">
+            <div class="status-dot"></div>
+            <span>Connecting to MongoDB...</span>
+          </div>
+
+          <div class="telemetry-chip" id="last-updated">--:--</div>
+
+          <button class="btn btn-primary" onclick="openVTModal()" title="Configure VirusTotal API Key">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 0L0 4v6c0 4.4 3.4 8.5 8 10 4.6-1.5 8-5.6 8-10V4L8 0z"/>
+            </svg>
+            VirusTotal API
+          </button>
+
+          <button class="btn" onclick="toggleTheme()" title="Toggle Light / Dark Mode">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"/>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            Theme
           </button>
         </div>
-      </div>
+      </header>
 
-      <div class="controls-bar">
-        <div class="search-box">
-          <svg width="14" height="14" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="5.5" cy="5.5" r="4"/><path d="M8.5 8.5L12 12"/>
-          </svg>
-          <input type="text" class="search-input" id="ioc-search-input" placeholder="Search IP, hash, domain, threat actor..." oninput="loadIocs()">
+      <!-- ─── GLOBAL KPI TELEMETRY BANNER ─── -->
+      <section class="kpi-banner">
+        <div class="kpi-grid">
+          
+          <div class="kpi-card" onclick="switchTab('news')" style="cursor:pointer;">
+            <div class="kpi-icon-box kpi-blue">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </div>
+            <div class="kpi-content">
+              <div class="kpi-label">Threat Reports</div>
+              <div class="kpi-value" id="kpi-articles-count">150+</div>
+              <div class="kpi-sub">
+                <span style="color:var(--cyan)">●</span> 11 Threat Categories
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card" onclick="switchTab('sources')" style="cursor:pointer;">
+            <div class="kpi-icon-box kpi-cyan">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 11a9 9 0 0 1 9 9"/>
+                <path d="M4 4a16 16 0 0 1 16 16"/>
+                <circle cx="5" cy="19" r="1"/>
+              </svg>
+            </div>
+            <div class="kpi-content">
+              <div class="kpi-label">Active Threat Feeds</div>
+              <div class="kpi-value" id="kpi-sources-count">29 Sources</div>
+              <div class="kpi-sub">
+                <span style="color:var(--green)">●</span> 28 Verified · 1 Honeypot
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card" onclick="switchTab('lab2')" style="cursor:pointer;">
+            <div class="kpi-icon-box kpi-green">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                <line x1="6" y1="6" x2="6.01" y2="6"/>
+                <line x1="6" y1="18" x2="6.01" y2="18"/>
+              </svg>
+            </div>
+            <div class="kpi-content">
+              <div class="kpi-label">WiredTiger Cache Fit</div>
+              <div class="kpi-value" id="kpi-cache-fit">2.8% RAM</div>
+              <div class="kpi-sub">
+                <span style="color:var(--green)">●</span> 100k Docs In Cache
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card" onclick="switchTab('iocs')" style="cursor:pointer;">
+            <div class="kpi-icon-box kpi-orange">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <div class="kpi-content">
+              <div class="kpi-label">Monitored IOCs</div>
+              <div class="kpi-value" id="kpi-iocs-count">13+ Active</div>
+              <div class="kpi-sub">
+                <span style="color:var(--blue)">●</span> VirusTotal v3 Enriched
+              </div>
+            </div>
+          </div>
+
         </div>
+      </section>
 
-        <select class="select-input" id="ioc-type-filter" onchange="loadIocs()">
-          <option value="all">All Indicator Types</option>
-          <option value="ip">IPv4 Addresses</option>
-          <option value="domain">Domain Names</option>
-          <option value="url">URLs</option>
-          <option value="sha256">SHA256 Hashes</option>
-          <option value="md5">MD5 Hashes</option>
-        </select>
+      <!-- ════════════════════════════════════════════
+           TAB 1: THREAT INTELLIGENCE FEED
+      ════════════════════════════════════════════ -->
+      <main class="page active" id="page-news">
+        <div class="page-inner">
+          <div class="controls-bar">
+            <div class="search-box">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" class="search-input" id="search-input" placeholder="Search threats, CVEs, ransomware, threat actors... (Ctrl + K)" oninput="onSearchInput(this.value)">
+            </div>
 
-        <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-left:auto;" id="ioc-count-label">--</span>
-      </div>
+            <select class="select-input" id="sev-filter" onchange="onSeverityChange(this.value)">
+              <option value="all">All Severities</option>
+              <option value="CRITICAL">Critical Severity</option>
+              <option value="HIGH">High Severity</option>
+              <option value="MEDIUM">Medium Severity</option>
+              <option value="LOW">Low Severity</option>
+            </select>
 
-      <table class="ioc-table">
-        <thead>
-          <tr>
-            <th>Indicator Value</th>
-            <th>Type</th>
-            <th>Confidence</th>
-            <th>Attributed Threat Actor</th>
-            <th>Category</th>
-          </tr>
-        </thead>
-        <tbody id="ioc-tbody"></tbody>
-      </table>
+            <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);margin-left:auto;" id="article-count-label">Loading reports...</span>
+          </div>
+
+          <div class="category-strip" id="category-strip"></div>
+
+          <div class="articles-grid" id="articles-grid"></div>
+
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:32px;" id="pagination"></div>
+        </div>
+      </main>
+
+      <!-- ════════════════════════════════════════════
+           TAB 2: THREAT CLASSIFIER & EXTRACTOR
+      ════════════════════════════════════════════ -->
+      <main class="page" id="page-classifier">
+        <div class="page-inner">
+          <div class="section-panel">
+            <h3>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--cyan)">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                <path d="M2 12h20"/>
+              </svg>
+              Real-Time Threat Classification &amp; Heuristic Analyzer
+            </h3>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+              Paste raw incident response alerts, darknet chatter, or security bulletins. The classification engine extracts CVEs, indicators of compromise, attributes threat actors, and assesses severity scores.
+            </p>
+
+            <div style="margin-bottom:12px;">
+              <input type="text" class="search-input" id="classify-title" placeholder="Advisory / Threat Title (Optional)" style="max-width:100%;margin-bottom:10px;background:var(--bg-input);padding:10px 14px;border:1px solid var(--border-card);border-radius:var(--radius-sm);width:100%;">
+              <textarea class="input-area" id="classify-text" placeholder="Paste advisory text, threat bulletin, exploit analysis, or IOC list..."></textarea>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+              <button class="btn btn-primary" onclick="runClassifier()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                Analyze &amp; Classify Threat
+              </button>
+              <span style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);">Or load sample:</span>
+              <button class="btn" onclick="loadSampleThreat('lockbit')">LockBit ScreenConnect 0-Day</button>
+              <button class="btn" onclick="loadSampleThreat('sandworm')">Sandworm Kapeka Backdoor</button>
+            </div>
+
+            <div id="classify-results" style="display:none;margin-top:20px;"></div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ════════════════════════════════════════════
+           TAB 3: IOC DATABASE
+      ════════════════════════════════════════════ -->
+      <main class="page" id="page-iocs">
+        <div class="page-inner">
+
+          <!-- VirusTotal Threat Intelligence Scanner Card -->
+          <div class="section-panel" style="margin-bottom:18px;">
+            <h3>
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" style="color:var(--cyan);">
+                <path d="M8 0L0 4v6c0 4.4 3.4 8.5 8 10 4.6-1.5 8-5.6 8-10V4L8 0z"/>
+              </svg>
+              VirusTotal v3 Real-Time Threat Intelligence Scanner
+            </h3>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+              Query 70+ antivirus engines and threat intelligence vendors for IPs, domains, SHA256/MD5 hashes, and URLs.
+            </p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+              <input type="text" class="search-input" id="vt-scanner-input" placeholder="Enter IP (e.g. 194.26.29.112), SHA256 hash, or domain..." style="flex:1;min-width:280px;background:var(--bg-input);padding:10px 14px;border:1px solid var(--border-card);border-radius:var(--radius-sm);">
+              <select class="select-input" id="vt-type-select">
+                <option value="ip">IPv4 Address</option>
+                <option value="sha256">SHA256 Hash</option>
+                <option value="md5">MD5 Hash</option>
+                <option value="domain">Domain Name</option>
+                <option value="url">URL</option>
+              </select>
+              <button class="btn btn-primary" onclick="runVirusTotalScan()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                Query VirusTotal
+              </button>
+            </div>
+            <div id="vt-scan-results" style="display:none;margin-top:14px;"></div>
+          </div>
+
+          <!-- VirusTotal Enrichment Summary -->
+          <div class="section-panel" style="margin-bottom:18px;padding:14px 20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+              <div>
+                <strong style="font-size:13px;color:var(--heading);">VirusTotal Database Enrichment</strong>
+                <div id="vt-enrichment-summary" style="margin-top:4px;color:var(--text-muted);">Loading enrichment stats...</div>
+              </div>
+              <button class="btn" id="btn-bulk-vt" onclick="triggerBulkVTEnrichment()" style="font-size:11px;padding:6px 14px;">
+                🔄 Bulk Enrich All IOCs via VT
+              </button>
+            </div>
+          </div>
+
+          <div class="controls-bar">
+            <div class="search-box">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" class="search-input" id="ioc-search-input" placeholder="Search IP, hash, domain, threat actor..." oninput="loadIocs()">
+            </div>
+
+            <select class="select-input" id="ioc-type-filter" onchange="loadIocs()">
+              <option value="all">All Indicator Types</option>
+              <option value="ip">IPv4 Addresses</option>
+              <option value="domain">Domain Names</option>
+              <option value="url">URLs</option>
+              <option value="sha256">SHA256 Hashes</option>
+              <option value="md5">MD5 Hashes</option>
+            </select>
+
+            <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);margin-left:auto;" id="ioc-count-label">--</span>
+          </div>
+
+          <table class="ioc-table">
+            <thead>
+              <tr>
+                <th>Indicator Value</th>
+                <th>Type</th>
+                <th>Confidence</th>
+                <th>Attributed Threat Actor</th>
+                <th>Category</th>
+              </tr>
+            </thead>
+            <tbody id="ioc-tbody"></tbody>
+          </table>
+        </div>
+      </main>
+
+      <!-- ════════════════════════════════════════════
+           TAB 4: LAB 7.1 PRODUCTION SCHEMA ANALYSIS
+      ════════════════════════════════════════════ -->
+      <main class="page" id="page-lab1">
+        <div class="page-inner" id="lab1-content">
+          <!-- Injected via JavaScript -->
+        </div>
+      </main>
+
+      <!-- ════════════════════════════════════════════
+           TAB 5: LAB 7.2 WORKING SET & CACHE MONITOR
+      ════════════════════════════════════════════ -->
+      <main class="page" id="page-lab2">
+        <div class="page-inner" id="lab2-content">
+          <!-- Injected via JavaScript -->
+        </div>
+      </main>
+
+      <!-- ════════════════════════════════════════════
+           TAB 6: SOURCES
+      ════════════════════════════════════════════ -->
+      <main class="page" id="page-sources">
+        <div class="page-inner">
+          <div style="margin-bottom:18px;">
+            <h2 style="font-size:17px;color:var(--heading);font-weight:700;">RSS Threat Feed Sources (29 Active Feeds)</h2>
+            <p style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono);">Derived from ctidigest.com feed registry</p>
+          </div>
+          <div class="articles-grid" id="sources-grid"></div>
+        </div>
+      </main>
+
+      <!-- ─── FOOTER ─── -->
+      <footer>
+        ThreatAnalysis Platform · SOC 2.0 Command Center · Student: K. Pranav Reddy (24BTRCL098) · MongoDB v8.3.7 WiredTiger
+      </footer>
+
     </div>
-  </main>
-
-  <!-- ════════════════════════════════════════════
-       TAB 4: LAB 7.1 PRODUCTION SCHEMA ANALYSIS
-  ════════════════════════════════════════════ -->
-  <main class="page" id="page-lab1">
-    <div class="page-inner" id="lab1-content">
-      <!-- Injected via JavaScript -->
-    </div>
-  </main>
-
-  <!-- ════════════════════════════════════════════
-       TAB 5: LAB 7.2 WORKING SET & CACHE MONITOR
-  ════════════════════════════════════════════ -->
-  <main class="page" id="page-lab2">
-    <div class="page-inner" id="lab2-content">
-      <!-- Injected via JavaScript -->
-    </div>
-  </main>
-
-  <!-- ════════════════════════════════════════════
-       TAB 6: SOURCES
-  ════════════════════════════════════════════ -->
-  <main class="page" id="page-sources">
-    <div class="page-inner">
-      <div style="margin-bottom:16px;">
-        <h2 style="font-size:16px;color:var(--heading);">RSS Threat Feed Sources (29 Active Feeds)</h2>
-        <p style="font-size:12px;color:var(--text-dim);font-family:var(--mono);">Derived from ctidigest.com feed registry</p>
-      </div>
-      <div class="articles-grid" id="sources-grid"></div>
-    </div>
-  </main>
+  </div>
 
   <!-- ─── VIRUSTOTAL API KEY MODAL ─── -->
-  <div id="vt-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;">
-    <div style="background:var(--surface);border:1px solid var(--blue);border-radius:var(--radius);padding:24px;max-width:480px;width:90%;box-shadow:var(--shadow-blue);">
-      <h3 style="font-size:16px;color:var(--heading);margin-bottom:10px;display:flex;align-items:center;gap:8px;">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" style="color:var(--blue);">
+  <div class="modal-overlay" id="vt-modal">
+    <div class="modal-dialog">
+      <h3 style="font-size:16px;color:var(--heading);margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" style="color:var(--cyan);">
           <path d="M8 0L0 4v6c0 4.4 3.4 8.5 8 10 4.6-1.5 8-5.6 8-10V4L8 0z"/>
         </svg>
         Configure VirusTotal API Key
@@ -232,8 +467,8 @@
       <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.5;">
         Paste your VirusTotal v3 API key below to enable live IOC lookups and reputation verdicts from 70+ security vendors.
       </p>
-      <input type="password" class="search-input" id="vt-api-key-input" placeholder="Paste VirusTotal API key (64 hex characters)..." style="width:100%;margin-bottom:14px;">
-      <div id="vt-key-status" style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:14px;"></div>
+      <input type="password" class="search-input" id="vt-api-key-input" placeholder="Paste VirusTotal API key (64 hex characters)..." style="width:100%;margin-bottom:14px;background:var(--bg-input);padding:10px 14px;border:1px solid var(--border-card);border-radius:var(--radius-sm);">
+      <div id="vt-key-status" style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-bottom:14px;"></div>
       <div style="display:flex;justify-content:flex-end;gap:10px;">
         <button class="btn" onclick="closeVTModal()">Cancel</button>
         <button class="btn btn-primary" onclick="saveVirusTotalKey()">Save Key</button>
@@ -241,10 +476,13 @@
     </div>
   </div>
 
-  <!-- ─── FOOTER ─── -->
-  <footer>
-    NoSQL Lab 7 · Student: K. Pranav Reddy (24BTRCL098) · OpenSource CTI Platform & Working Set Analysis
-  </footer>
+  <!-- ─── TOAST NOTIFICATION CONTAINER ─── -->
+  <div id="soc-toast">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--cyan);">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    <span id="soc-toast-text">Message</span>
+  </div>
 
   <script src="/static/js/app.js"></script>
 </body>

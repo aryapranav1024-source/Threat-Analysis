@@ -98,7 +98,8 @@ def get_health():
                 "threat_articles_embedded": db["threat_articles_embedded"].count_documents({}),
                 "sources": db["sources"].count_documents({}),
                 "indicators_of_compromise": db["indicators_of_compromise"].count_documents({}),
-                "working_set_reports": db["security_reports_working_set"].count_documents({})
+                "working_set_reports": db["security_reports_working_set"].count_documents({}),
+                "threat_entities": db["threat_entities"].count_documents({})
             }
         }
     except Exception as e:
@@ -189,6 +190,42 @@ def get_iocs(
         ]
     iocs = [serialize_doc(doc) for doc in db["indicators_of_compromise"].find(query).limit(100)]
     return {"total": len(iocs), "iocs": iocs}
+
+
+# ── Entity Resolution & Deduplication Endpoints ─────────────────────
+@app.get("/api/entities")
+def get_resolved_entities(q: Optional[str] = None):
+    """Retrieve deduplicated and merged threat entities."""
+    query = {}
+    if q:
+        query["$or"] = [
+            {"aliases": {"$regex": q, "$options": "i"}},
+            {"threat_actors": {"$regex": q, "$options": "i"}},
+            {"tags": {"$regex": q, "$options": "i"}}
+        ]
+    docs = [serialize_doc(d) for d in db["threat_entities"].find(query)]
+    return {"total": len(docs), "entities": docs}
+
+
+@app.post("/api/entity-resolution/run")
+def run_entity_resolution_endpoint(live: bool = False):
+    """Trigger the Entity Resolution pipeline (dry_run by default)."""
+    import subprocess
+    cmd = [sys.executable, "entity_resolution_pipeline.py"]
+    if live:
+        cmd.append("--live")
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
+    return {
+        "status": "success" if result.returncode == 0 else "error",
+        "mode": "live" if live else "dry_run",
+        "output": result.stdout[-2000:],
+        "remaining_entities": db["threat_entities"].count_documents({})
+    }
 
 
 # ── Threat Classification Feature ───────────────────────────────────

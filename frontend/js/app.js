@@ -18,21 +18,87 @@ let currentSearch = '';
 let currentSeverity = 'all';
 
 // ── INIT ─────────────────────────────────────────────────────────────
+const TITLES = {
+  news: 'Threat Intelligence Feed',
+  classifier: 'Threat Classifier & Heuristic Studio',
+  iocs: 'Indicators of Compromise (IOC) Database',
+  lab1: 'Lab 7.1: Production Schema Analysis ($bsonSize)',
+  lab2: 'Lab 7.2: Working Set Analysis & WiredTiger Cache',
+  sources: 'Threat Sources Registry (29 Active Feeds)'
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   initNav();
   buildCategoryPills();
   loadArticles();
   loadSystemHealth();
+  initShortcuts();
+
+  // Restore sidebar state
+  if (localStorage.getItem('soc-sidebar-collapsed') === '1') {
+    document.getElementById('soc-sidebar')?.classList.add('collapsed');
+  }
+
+  // Restore theme
+  const savedTheme = localStorage.getItem('cti-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
 
   // Polling for live time display
   updateTimestamp();
-  setInterval(updateTimestamp, 60000);
+  setInterval(updateTimestamp, 30000);
 });
+
+function initShortcuts() {
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      const s = document.getElementById('search-input');
+      if (s) {
+        if (activeTab !== 'news') switchTab('news');
+        s.focus();
+        s.select();
+      }
+    }
+  });
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('soc-sidebar');
+  if (sb) {
+    sb.classList.toggle('collapsed');
+    localStorage.setItem('soc-sidebar-collapsed', sb.classList.contains('collapsed') ? '1' : '0');
+  }
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('soc-toast');
+  const txt = document.getElementById('soc-toast-text');
+  if (toast && txt) {
+    txt.textContent = msg;
+    toast.style.display = 'flex';
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => {
+      toast.style.display = 'none';
+    }, 2800);
+  }
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(`Copied: ${text}`);
+    }).catch(() => {
+      showToast(`Copied: ${text}`);
+    });
+  } else {
+    showToast(`Selected: ${text}`);
+  }
+}
 
 function updateTimestamp() {
   const el = document.getElementById('last-updated');
   if (el) {
-    el.textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    el.textContent = 'UTC ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 }
 
@@ -41,7 +107,7 @@ function initNav() {
   document.querySelectorAll('.nav-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       const tab = btn.getAttribute('data-tab');
-      switchTab(tab);
+      if (tab) switchTab(tab);
     });
   });
 }
@@ -54,6 +120,11 @@ function switchTab(tabName) {
   document.querySelectorAll('.page').forEach(p => {
     p.classList.toggle('active', p.id === `page-${tabName}`);
   });
+
+  const bTitle = document.getElementById('breadcrumb-title');
+  if (bTitle && TITLES[tabName]) {
+    bTitle.textContent = TITLES[tabName];
+  }
 
   if (tabName === 'news') loadArticles();
   else if (tabName === 'iocs') { loadIocs(); loadVTEnrichmentSummary(); }
@@ -68,6 +139,7 @@ function toggleTheme() {
   const next = current === 'dark' ? 'light' : 'dark';
   html.setAttribute('data-theme', next);
   localStorage.setItem('cti-theme', next);
+  showToast(`Switched to ${next.toUpperCase()} theme`);
 }
 
 // ── SYSTEM HEALTH ─────────────────────────────────────────────────────
@@ -75,10 +147,48 @@ async function loadSystemHealth() {
   try {
     const res = await fetch(`${API_BASE}/api/health`);
     const data = await res.json();
-    document.getElementById('header-status').textContent = `DB: ${data.database} · MongoDB ${data.mongodb_version}`;
+    const hs = document.getElementById('header-status');
+    if (hs) {
+      hs.innerHTML = `<div class="status-dot"></div><span>DB: ${data.database} · MongoDB ${data.mongodb_version}</span>`;
+    }
+
+    const c = data.counts || {};
+    const arts = c.threat_articles || 150;
+    const srcs = c.sources || 29;
+    const iocs = c.indicators_of_compromise || 13;
+
+    // Update Topbar Badges
+    const bFeed = document.getElementById('badge-feed-count');
+    if (bFeed) bFeed.textContent = arts;
+    const bSrc = document.getElementById('badge-source-count');
+    if (bSrc) bSrc.textContent = srcs;
+    const bIoc = document.getElementById('badge-ioc-count');
+    if (bIoc) bIoc.textContent = `${iocs}+`;
+
+    // Update KPI Banner
+    const kpiArt = document.getElementById('kpi-articles-count');
+    if (kpiArt) kpiArt.textContent = `${arts} Reports`;
+    const kpiSrc = document.getElementById('kpi-sources-count');
+    if (kpiSrc) kpiSrc.textContent = `${srcs} Sources`;
+    const kpiIoc = document.getElementById('kpi-iocs-count');
+    if (kpiIoc) kpiIoc.textContent = `${iocs}+ Active`;
+
+    // Cache Stats KPI
+    loadCacheKPI();
   } catch (e) {
     console.error('Health fetch failed:', e);
   }
+}
+
+async function loadCacheKPI() {
+  try {
+    const res = await fetch(`${API_BASE}/api/lab2/cache-stats`);
+    const d = await res.json();
+    const kpiCache = document.getElementById('kpi-cache-fit');
+    if (kpiCache) {
+      kpiCache.textContent = `${d.cache_utilization_pct}% RAM`;
+    }
+  } catch (e) { /* silent */ }
 }
 
 // ── CATEGORY PILLS ────────────────────────────────────────────────────
@@ -206,27 +316,40 @@ async function loadIocs() {
       return;
     }
 
-    tbody.innerHTML = data.iocs.map(ioc => `
-      <tr>
-        <td class="ioc-value">${esc(ioc.value)}</td>
-        <td><span class="source-chip" style="font-size:9px;">${ioc.type.toUpperCase()}</span></td>
-        <td>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <div style="width:40px;height:4px;background:var(--border2);border-radius:2px;overflow:hidden;">
-              <div style="width:${ioc.confidence}%;height:100%;background:${ioc.confidence >= 80 ? 'var(--green)' : 'var(--orange)'}"></div>
+    tbody.innerHTML = data.iocs.map(ioc => {
+      const vt = ioc.vt_enrichment;
+      let vtBadge = '';
+      if (vt) {
+        const isMal = vt.verdict === 'MALICIOUS';
+        vtBadge = `<span class="severity-badge sev-${isMal ? 'CRITICAL' : 'LOW'}" style="font-size:9px;padding:2px 6px;margin-left:6px;">VT: ${vt.malicious}/${vt.total_engines || 70}</span>`;
+      }
+
+      return `
+        <tr>
+          <td class="ioc-value">
+            <span style="font-family:var(--font-mono);font-size:12px;font-weight:600;">${esc(ioc.value)}</span>
+            <button class="copy-val-btn" onclick="copyToClipboard('${esc(ioc.value)}')" title="Copy to clipboard">📋</button>
+            ${vtBadge}
+          </td>
+          <td><span class="source-chip" style="font-size:10px;">${ioc.type.toUpperCase()}</span></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:50px;height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
+                <div style="width:${ioc.confidence}%;height:100%;background:${ioc.confidence >= 85 ? 'var(--green)' : 'var(--orange)'}"></div>
+              </div>
+              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">${ioc.confidence}%</span>
             </div>
-            <span style="font-family:var(--mono);font-size:11px;">${ioc.confidence}%</span>
-          </div>
-        </td>
-        <td>${esc(ioc.threat_actor || 'Unknown')}</td>
-        <td>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span class="tag-badge">${esc(ioc.category || 'Threat Telemetry')}</span>
-            <button class="btn" style="padding:2px 8px;font-size:10px;" onclick="runVirusTotalScan('${esc(ioc.value)}', '${ioc.type}')">Scan VT</button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
+          </td>
+          <td><strong style="color:var(--heading);">${esc(ioc.threat_actor || 'Unknown')}</strong></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="tag-badge" style="color:var(--cyan);">${esc(ioc.category || 'Threat Telemetry')}</span>
+              <button class="btn btn-primary" style="padding:2px 8px;font-size:10px;" onclick="runVirusTotalScan('${esc(ioc.value)}', '${ioc.type}')">Scan VT</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="5" style="color:var(--red);padding:24px;">Error: ${err.message}</td></tr>`;
   }
