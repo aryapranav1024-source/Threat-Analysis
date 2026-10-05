@@ -83,6 +83,18 @@
           <span class="nav-tab-badge" id="badge-ioc-count">13+</span>
         </button>
 
+        <button class="nav-tab" data-tab="entities" onclick="switchTab('entities')">
+          <div class="nav-tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="8.5" cy="7" r="4"/>
+              <polyline points="17 11 19 13 23 9"/>
+            </svg>
+          </div>
+          <span class="nav-tab-label">Entity Resolution</span>
+          <span class="nav-tab-badge" id="badge-entity-count" style="color:var(--green)">Dedupe</span>
+        </button>
+
         <div class="menu-section-label" style="margin-top:10px;">Engineering Labs</div>
 
         <button class="nav-tab" data-tab="lab1" onclick="switchTab('lab1')">
@@ -431,6 +443,103 @@
       <main class="page" id="page-lab2">
         <div class="page-inner" id="lab2-content">
           <!-- Injected via JavaScript -->
+        </div>
+      </main>
+
+      <!-- ════════════════════════════════════════════
+           TAB: ENTITY RESOLUTION & DEDUPLICATION
+      ════════════════════════════════════════════ -->
+      <main class="page" id="page-entities">
+        <div class="page-inner">
+          <div style="margin-bottom:20px;">
+            <h2 style="font-size:18px;color:var(--heading);font-weight:700;display:flex;align-items:center;gap:10px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--cyan);">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="8.5" cy="7" r="4"/>
+                <polyline points="17 11 19 13 23 9"/>
+              </svg>
+              Cross-Source Entity Resolution &amp; Deduplication Pipeline
+            </h2>
+            <p style="font-size:13px;color:var(--text-muted);margin-top:4px;">
+              Unifies duplicate threat records ingested across CTI Digest, VirusTotal Telemetry, and Awesome Annual Reports.
+              Applies token normalization, source hierarchy priority (VirusTotal &gt; CTI Digest &gt; Awesome Report), and lossless field unions.
+            </p>
+          </div>
+
+          <!-- Entity Resolution Metrics Grid -->
+          <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
+            <div class="stat-card">
+              <div class="stat-val" id="stat-entities-total">8</div>
+              <div class="stat-lbl">Golden Threat Entities</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val" style="color:var(--green);" id="stat-entities-merged">66.7%</div>
+              <div class="stat-lbl">Duplication Reduction Ratio</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val" style="color:var(--cyan);">100%</div>
+              <div class="stat-lbl">Normalization Accuracy</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val" style="color:var(--purple);">3 Feeds</div>
+              <div class="stat-lbl">Unified Ingest Sources</div>
+            </div>
+          </div>
+
+          <!-- Interactive Control Bar -->
+          <div class="section-panel" style="margin-bottom:20px;padding:16px 20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+              <div>
+                <strong style="color:var(--heading);font-size:14px;">Pipeline Execution Controls</strong>
+                <p style="font-size:12px;color:var(--text-dim);margin-top:2px;">
+                  Execute dry-run to preview proposed merges, or trigger live atomic updates and duplicate purging.
+                </p>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn" id="btn-entity-dryrun" onclick="triggerEntityPipeline(false)">
+                  🔍 Run Dry-Run Preview
+                </button>
+                <button class="btn btn-primary" id="btn-entity-live" onclick="triggerEntityPipeline(true)">
+                  ⚡ Execute Live Deduplication
+                </button>
+                <button class="btn" onclick="loadEntities()">
+                  🔄 Refresh Entities
+                </button>
+              </div>
+            </div>
+            <div id="entity-pipeline-log" style="display:none;margin-top:14px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:var(--radius-sm);padding:12px;font-family:var(--font-mono);font-size:11px;max-height:220px;overflow-y:auto;white-space:pre-wrap;color:var(--cyan);"></div>
+          </div>
+
+          <!-- Entity Search Bar -->
+          <div class="controls-bar" style="margin-bottom:16px;">
+            <div class="search-box">
+              <svg width="14" height="14" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="5.5" cy="5.5" r="4"/><path d="M8.5 8.5L12 12"/>
+              </svg>
+              <input type="text" class="search-input" id="entity-search-input" placeholder="Search by entity alias, actor, or tag (e.g. pranav, lockbit)..." oninput="loadEntities()">
+            </div>
+            <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-left:auto;" id="entity-count-label">--</span>
+          </div>
+
+          <!-- Resolved Entities Table -->
+          <div class="section-panel" style="padding:0;overflow:hidden;">
+            <table class="ioc-table">
+              <thead>
+                <tr>
+                  <th>Canonical Entity ID</th>
+                  <th>Unified Aliases across Sources</th>
+                  <th>Sources Provenance</th>
+                  <th>Severity</th>
+                  <th>Confidence</th>
+                  <th>Temporal Span</th>
+                  <th>Merged IOCs</th>
+                </tr>
+              </thead>
+              <tbody id="entities-tbody">
+                <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-dim);">Loading resolved threat entities...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </main>
 

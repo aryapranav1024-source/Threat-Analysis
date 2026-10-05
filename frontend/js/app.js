@@ -24,6 +24,7 @@ const TITLES = {
   iocs: 'Indicators of Compromise (IOC) Database',
   lab1: 'Lab 7.1: Production Schema Analysis ($bsonSize)',
   lab2: 'Lab 7.2: Working Set Analysis & WiredTiger Cache',
+  entities: 'Cross-Source Threat Entity Resolution & Deduplication',
   sources: 'Threat Sources Registry (29 Active Feeds)'
 };
 
@@ -130,6 +131,7 @@ function switchTab(tabName) {
   else if (tabName === 'iocs') { loadIocs(); loadVTEnrichmentSummary(); }
   else if (tabName === 'lab1') loadLab1Schema();
   else if (tabName === 'lab2') loadLab2CacheStats();
+  else if (tabName === 'entities') loadEntities();
   else if (tabName === 'sources') loadSources();
 }
 
@@ -904,7 +906,128 @@ async function loadSources() {
   }
 }
 
+// ── ENTITY RESOLUTION & DEDUPLICATION ───────────────────────────────
+async function loadEntities() {
+  const tbody = document.getElementById('entities-tbody');
+  if (!tbody) return;
+
+  const search = document.getElementById('entity-search-input')?.value.trim() || '';
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-dim);">Querying deduplicated threat entities...</td></tr>';
+
+  try {
+    const url = search ? `${API_BASE}/api/entities?q=${encodeURIComponent(search)}` : `${API_BASE}/api/entities`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    const entities = data.entities || [];
+    const countLabel = document.getElementById('entity-count-label');
+    if (countLabel) countLabel.textContent = `${entities.length} Golden Entities`;
+
+    const statTotal = document.getElementById('stat-entities-total');
+    if (statTotal) statTotal.textContent = entities.length;
+
+    if (!entities.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">No threat entities found in database. Run the pipeline above to seed & deduplicate.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = entities.map(e => {
+      const aliases = e.aliases || [];
+      const sources = e.sources || [];
+      const iocs = e.iocs || [];
+      const actors = e.threat_actors || [];
+      const sev = e.severity || 'LOW';
+
+      const firstSeen = e.first_seen ? new Date(e.first_seen).toISOString().split('T')[0] : 'N/A';
+      const lastSeen = e.last_seen ? new Date(e.last_seen).toISOString().split('T')[0] : 'N/A';
+
+      const sourceBadges = sources.map(s => {
+        let col = 'var(--blue)';
+        if (s.includes('virustotal')) col = 'var(--cyan)';
+        else if (s.includes('cti')) col = 'var(--green)';
+        else if (s.includes('awesome')) col = 'var(--purple)';
+        return `<span class="tag-badge" style="color:${col};font-size:10px;">${esc(s)}</span>`;
+      }).join(' ');
+
+      const aliasTags = aliases.map(a => 
+        `<span class="tag-badge" style="background:rgba(255,255,255,0.06);color:var(--heading);font-family:var(--font-mono);font-size:10px;">${esc(a)}</span>`
+      ).join(' ');
+
+      return `
+        <tr>
+          <td style="font-family:var(--font-mono);font-weight:600;color:var(--cyan);">
+            ${esc(e.entity_id || e.id || 'entity')}
+            ${e.merged_count ? `<span style="font-size:10px;color:var(--text-dim);display:block;">Merged ${e.merged_count} docs</span>` : ''}
+          </td>
+          <td>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;max-width:260px;">
+              ${aliasTags || '<span style="color:var(--text-dim)">None</span>'}
+            </div>
+          </td>
+          <td>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+              ${sourceBadges || '<span style="color:var(--text-dim)">None</span>'}
+            </div>
+          </td>
+          <td>
+            <span class="severity-badge sev-${sev}">${sev}</span>
+          </td>
+          <td style="font-family:var(--font-mono);font-size:12px;font-weight:600;">
+            ${e.confidence || 0}%
+          </td>
+          <td style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);white-space:nowrap;">
+            <div>Seen: ${firstSeen}</div>
+            <div style="color:var(--cyan);">Last: ${lastSeen}</div>
+          </td>
+          <td>
+            <span style="font-family:var(--font-mono);font-size:12px;color:var(--heading);font-weight:600;">${iocs.length} IOCs</span>
+            ${actors.length ? `<div style="font-size:10px;color:var(--text-dim);">${esc(actors.join(', '))}</div>` : ''}
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:24px;text-align:center;">Failed to load entities: ${err.message}</td></tr>`;
+  }
+}
+
+async function triggerEntityPipeline(isLive) {
+  const btn = isLive ? document.getElementById('btn-entity-live') : document.getElementById('btn-entity-dryrun');
+  const logBox = document.getElementById('entity-pipeline-log');
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = isLive ? 'Executing Live...' : 'Simulating...';
+  }
+
+  if (logBox) {
+    logBox.style.display = 'block';
+    logBox.textContent = `Triggering ${isLive ? 'LIVE' : 'DRY-RUN'} Entity Resolution Pipeline in background...\n`;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/entity-resolution/run?live=${isLive}`, { method: 'POST' });
+    const data = await res.json();
+
+    if (logBox) {
+      logBox.textContent = data.output || JSON.stringify(data, null, 2);
+    }
+    showToast(isLive ? 'Deduplication Completed!' : 'Dry-Run Simulation Completed!');
+    loadEntities();
+  } catch (err) {
+    if (logBox) logBox.textContent += `\n[ERROR] Pipeline failed: ${err.message}`;
+    showToast('Pipeline execution failed');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = isLive ? '⚡ Execute Live Deduplication' : '🔍 Run Dry-Run Preview';
+    }
+  }
+}
+
 // ── UTILITIES ─────────────────────────────────────────────────────────
+
 function esc(str) {
   if (!str) return '';
   return String(str)
