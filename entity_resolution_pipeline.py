@@ -84,18 +84,18 @@ def normalize_entity_identifier(raw_id: str) -> str:
         Normalized canonical string key for entity grouping.
 
     Examples:
-        >>> normalize_entity_identifier("CTI_Pranav_098")
-        'pranav_098'
-        >>> normalize_entity_identifier("k.pranav_roll_no_098")
-        'pranav_098'
-        >>> normalize_entity_identifier("pranav-098-vt")
-        'pranav_098'
-        >>> normalize_entity_identifier("CTI_LockBit3_098")
-        'lockbit3_098'
-        >>> normalize_entity_identifier("lockbit3_098_vt_scan")
-        'lockbit3_098'
-        >>> normalize_entity_identifier("ASR_LockBit3_2024")
-        'lockbit3_2024'
+        >>> normalize_entity_identifier("CTI_LockBit3_Ransomware")
+        'lockbit3_ransomware'
+        >>> normalize_entity_identifier("lockbit3-ransomware-vt-telemetry")
+        'lockbit3_ransomware'
+        >>> normalize_entity_identifier("ASR_LockBit3_Ransomware_report")
+        'lockbit3_ransomware'
+        >>> normalize_entity_identifier("CTI_Lazarus_Group_DPRK_alert")
+        'lazarus_group_dprk'
+        >>> normalize_entity_identifier("lazarus-group-dprk-vt-scan")
+        'lazarus_group_dprk'
+        >>> normalize_entity_identifier("ASR_Sandworm_APT44")
+        'sandworm_apt44'
     """
     if not raw_id:
         return ""
@@ -517,28 +517,33 @@ def seed_duplicate_test_data():
     # 8 unique entities x 3 sources = 24 documents with realistic naming variance
     test_entities = [
         {
-            "core_name": "pranav_098",
+            "core_name": "lazarus_group_dprk",
             "variants": [
-                {"entity_id": "k.pranav_roll_no_098",  "data_source": "github_awesome_report"},
-                {"entity_id": "pranav-098-vt",          "data_source": "virustotal"},
-                {"entity_id": "CTI_Pranav_098",         "data_source": "cti_digest"},
+                {"entity_id": "CTI_Lazarus_Group_DPRK_alert",  "data_source": "cti_digest"},
+                {"entity_id": "lazarus-group-dprk-vt-scan",    "data_source": "virustotal"},
+                {"entity_id": "ASR_Lazarus_Group_DPRK_entry",  "data_source": "github_awesome_report"},
             ],
-            "threat_actors": ["K. Pranav Reddy"],
-            "severity": "LOW",
-            "confidence": 85,
-            "tags": ["student", "lab-entity", "24btrcl098"],
-        },
-        {
-            "core_name": "lockbit3_098",
-            "variants": [
-                {"entity_id": "CTI_LockBit3_098",       "data_source": "cti_digest"},
-                {"entity_id": "lockbit3_098_vt_scan",    "data_source": "virustotal"},
-                {"entity_id": "ASR_LockBit3_098_report", "data_source": "github_awesome_report"},
-            ],
-            "threat_actors": ["LockBit 3.0"],
+            "threat_actors": ["Lazarus Group", "APT38", "Hidden Cobra"],
             "severity": "CRITICAL",
             "confidence": 98,
-            "tags": ["ransomware", "lockbit", "cve-2024-1709"],
+            "tags": ["dprk", "cryptocurrency", "byovd", "bank-heist", "nation-state"],
+            "cves": ["CVE-2024-21338"],
+            "iocs": [
+                {"type": "ip", "value": "175.45.176.1", "confidence": 95},
+                {"type": "sha256", "value": "7c4a8d09ca3762af61e59520943dc26494f8941b523a4982a7a57a92cfb371b2", "confidence": 99},
+            ],
+        },
+        {
+            "core_name": "lockbit3_ransomware",
+            "variants": [
+                {"entity_id": "CTI_LockBit3_Ransomware",       "data_source": "cti_digest"},
+                {"entity_id": "lockbit3-ransomware-vt-telemetry", "data_source": "virustotal"},
+                {"entity_id": "ASR_LockBit3_Ransomware_report", "data_source": "github_awesome_report"},
+            ],
+            "threat_actors": ["LockBit 3.0", "LockBit Supporter"],
+            "severity": "CRITICAL",
+            "confidence": 99,
+            "tags": ["ransomware", "lockbit", "cve-2024-1709", "screenconnect"],
             "cves": ["CVE-2024-1709", "CVE-2024-1708"],
             "iocs": [
                 {"type": "ip", "value": "194.26.29.112", "confidence": 96},
@@ -734,21 +739,21 @@ def run_self_verification():
 
     test_cases = [
         # (input, expected_output, description)
-        ("CTI_Pranav_098",                "pranav_098",          "CTI Digest prefix removal"),
-        ("k.pranav_roll_no_098",          "pranav_098",          "Honorific + academic noise removal"),
-        ("pranav-098-vt",                 "pranav_098",          "VirusTotal suffix + hyphen normalization"),
-        ("CTI_LockBit3_098",             "lockbit3_098",        "CTI prefix with alphanumeric entity"),
-        ("lockbit3_098_vt_scan",         "lockbit3_098",        "VT scan suffix removal"),
-        ("ASR_LockBit3_2024",            "lockbit3_2024",       "Awesome Report prefix removal"),
-        ("threat_sandworm_apt44_feed",   "sandworm_apt44",      "Threat prefix + feed suffix"),
-        ("sandworm-apt44-vt-telemetry",  "sandworm_apt44",      "VT telemetry suffix + hyphens"),
-        ("ASR_Sandworm_APT44",           "sandworm_apt44",      "ASR prefix standard"),
-        ("  CTI_Pranav_098  ",           "pranav_098",          "Whitespace stripping"),
+        ("CTI_LockBit3_Ransomware",       "lockbit3_ransomware", "CTI Digest prefix removal"),
+        ("lockbit3-ransomware-vt-telemetry", "lockbit3_ransomware", "VT telemetry suffix + hyphens"),
+        ("ASR_LockBit3_Ransomware_report","lockbit3_ransomware", "Awesome Report prefix & report suffix"),
+        ("CTI_Lazarus_Group_DPRK_alert",  "lazarus_group_dprk",  "CTI prefix + alert suffix"),
+        ("lazarus-group-dprk-vt-scan",    "lazarus_group_dprk",  "VT scan suffix with hyphenated APT"),
+        ("ASR_Lazarus_Group_DPRK_entry",  "lazarus_group_dprk",  "ASR prefix + entry suffix"),
+        ("threat_sandworm_apt44_feed",    "sandworm_apt44",      "Threat prefix + feed suffix"),
+        ("sandworm-apt44-vt-telemetry",   "sandworm_apt44",      "VT telemetry suffix + hyphens"),
+        ("ASR_Sandworm_APT44",            "sandworm_apt44",      "ASR prefix standard"),
+        ("  CTI_Volt_Typhoon_scan  ",     "volt_typhoon",        "Whitespace stripping + CTI scan"),
         ("",                              "",                    "Empty string safety"),
-        ("UNIQUE_ENTITY_XYZ",           "unique_entity_xyz",   "No prefix/suffix match -> passthrough"),
-        ("k.scattered_spider_report",   "scattered_spider",    "k. prefix + report suffix"),
-        ("CTI_Midnight_Blizzard_alert", "midnight_blizzard",   "CTI prefix + alert suffix"),
-        ("midnight-blizzard-vt",        "midnight_blizzard",   "Hyphen + VT suffix"),
+        ("UNIQUE_MALWARE_ZERO_DAY",       "unique_malware_zero_day", "No prefix/suffix match -> passthrough"),
+        ("threat_scattered_spider_report","scattered_spider",    "Threat prefix + report suffix"),
+        ("CTI_Midnight_Blizzard_alert",  "midnight_blizzard",   "CTI prefix + alert suffix"),
+        ("midnight-blizzard-vt",         "midnight_blizzard",   "Hyphen + VT suffix"),
     ]
 
     results_table = Table(title="Normalization Edge Case Verification", box=box.ROUNDED, show_lines=True)

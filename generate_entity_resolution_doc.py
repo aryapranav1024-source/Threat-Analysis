@@ -171,8 +171,8 @@ def build_doc(output_path):
         "3. Awesome Annual Report Dataset (community-sourced annual security threat metrics)\n\n"
         "Because each source employs independent ingestion schemas and naming conventions, duplicate records representing "
         "the same threat actor, malware family, or indicator of compromise (IoC) frequently saturate the database. "
-        "For example, the entities 'k.pranav_roll_no_098', 'pranav_098', 'pranav-098-vt', and 'CTI_Pranav_098' all describe "
-        "the exact same threat entity under different source wrappers."
+        "For example, the entities 'CTI_Lazarus_Group_DPRK_alert', 'lazarus-group-dprk-vt-scan', and 'ASR_Lazarus_Group_DPRK_entry' "
+        "all describe the exact same underlying threat entity under different source wrappers."
     )
 
     add_callout(
@@ -189,7 +189,7 @@ def build_doc(output_path):
     h2.paragraph_format.space_after = Pt(6)
 
     doc.add_paragraph(
-        "The normalization function `normalize_entity_identifier(raw_id: str) -> str` executes a 4-stage pipeline "
+        "The normalization function `normalize_entity_identifier(raw_id: str) -> str` executes a multi-stage pipeline "
         "to extract the canonical entity key from raw identifier strings:"
     )
 
@@ -197,11 +197,11 @@ def build_doc(output_path):
     norm_widths = [1.8, 2.2, 3.0]
     norm_headers = ["Pipeline Stage", "Regex / Logic Applied", "Input -> Output Example"]
     norm_data = [
-        ["Stage 1: Sanitize", "raw_id.lower().strip()", "'  CTI_Pranav_098  ' -> 'cti_pranav_098'"],
-        ["Stage 2: Prefix Strip", r"^(cti|threat|asr|report)[_\-]? | ^k\.", "'CTI_LockBit3_098' -> 'lockbit3_098'"],
-        ["Stage 3: Suffix Strip", r"[_\-]?vt[_\-]?(scan|telemetry)?$ | [_\-]?(feed|alert)$", "'pranav-098-vt' -> 'pranav-098'"],
-        ["Stage 4: Noise Token Strip", r"[_\-]?roll[_\-]?no[_\-]?", "'pranav_roll_no_098' -> 'pranav_098'"],
-        ["Stage 5: Separator Norm", r"[-.\s]+ -> '_' ; collapse '_+'", "'k.pranav-098' -> 'pranav_098'"]
+        ["Stage 1: Sanitize", "raw_id.lower().strip()", "'  CTI_Volt_Typhoon_scan  ' -> 'cti_volt_typhoon_scan'"],
+        ["Stage 2: Prefix Strip", r"^(cti|threat|asr|report)[_\-]? | ^k\.", "'CTI_LockBit3_Ransomware' -> 'lockbit3_ransomware'"],
+        ["Stage 3: Suffix Strip", r"[_\-]?vt[_\-]?(scan|telemetry)?$ | [_\-]?(feed|alert)$", "'lockbit3-ransomware-vt-telemetry' -> 'lockbit3-ransomware'"],
+        ["Stage 4: Entry Strip", r"[_\-]?(entry|report)$", "'ASR_Lazarus_Group_DPRK_entry' -> 'lazarus_group_dprk'"],
+        ["Stage 5: Separator Norm", r"[-.\s]+ -> '_' ; collapse '_+'", "'sandworm-apt44-vt-telemetry' -> 'sandworm_apt44'"]
     ]
     format_table(norm_tbl, norm_widths, norm_headers, norm_data, header_bg="203A43")
 
@@ -279,19 +279,19 @@ def build_doc(output_path):
     test_widths = [2.2, 1.6, 1.2, 2.0]
     test_headers = ["Input Identifier", "Expected Canonical Key", "Status", "Edge Case Verified"]
     test_data = [
-        ["CTI_Pranav_098", "pranav_098", "PASS", "CTI Digest prefix stripping"],
-        ["k.pranav_roll_no_098", "pranav_098", "PASS", "Honorific (k.) and roll_no token removal"],
-        ["pranav-098-vt", "pranav_098", "PASS", "VirusTotal suffix and hyphen normalization"],
-        ["CTI_LockBit3_098", "lockbit3_098", "PASS", "Alphanumeric entity with CTI prefix"],
-        ["lockbit3_098_vt_scan", "lockbit3_098", "PASS", "Multi-token VT scan suffix removal"],
-        ["ASR_LockBit3_2024", "lockbit3_2024", "PASS", "Awesome Report prefix handling"],
+        ["CTI_LockBit3_Ransomware", "lockbit3_ransomware", "PASS", "CTI Digest prefix removal"],
+        ["lockbit3-ransomware-vt-telemetry", "lockbit3_ransomware", "PASS", "VT telemetry suffix and hyphen normalization"],
+        ["ASR_LockBit3_Ransomware_report", "lockbit3_ransomware", "PASS", "Awesome Report prefix and report suffix"],
+        ["CTI_Lazarus_Group_DPRK_alert", "lazarus_group_dprk", "PASS", "CTI prefix and alert suffix"],
+        ["lazarus-group-dprk-vt-scan", "lazarus_group_dprk", "PASS", "Multi-token VT scan suffix removal"],
+        ["ASR_Lazarus_Group_DPRK_entry", "lazarus_group_dprk", "PASS", "Awesome Report prefix and entry suffix"],
         ["threat_sandworm_apt44_feed", "sandworm_apt44", "PASS", "Compound prefix (threat_) + suffix (feed)"],
         ["sandworm-apt44-vt-telemetry", "sandworm_apt44", "PASS", "Compound VT telemetry suffix removal"],
         ["ASR_Sandworm_APT44", "sandworm_apt44", "PASS", "Standard ASR prefix with uppercase APT"],
-        ["  CTI_Pranav_098  ", "pranav_098", "PASS", "Leading and trailing whitespace stripping"],
+        ["  CTI_Volt_Typhoon_scan  ", "volt_typhoon", "PASS", "Leading and trailing whitespace stripping"],
         ["", "", "PASS", "Empty string safety (returns empty)"],
-        ["UNIQUE_ENTITY_XYZ", "unique_entity_xyz", "PASS", "Unmatched unique entity passthrough"],
-        ["k.scattered_spider_report", "scattered_spider", "PASS", "k. prefix with report suffix"],
+        ["UNIQUE_MALWARE_ZERO_DAY", "unique_malware_zero_day", "PASS", "Unmatched unique entity passthrough"],
+        ["threat_scattered_spider_report", "scattered_spider", "PASS", "Threat prefix with report suffix"],
         ["CTI_Midnight_Blizzard_alert", "midnight_blizzard", "PASS", "CTI prefix with alert suffix"],
         ["midnight-blizzard-vt", "midnight_blizzard", "PASS", "Hyphenated identifier with VT suffix"]
     ]
@@ -306,7 +306,7 @@ def build_doc(output_path):
 
     doc.add_paragraph(
         "The pipeline was executed against MongoDB collection `threat_entities` in live mode (`--live`). "
-        "The results demonstrate complete deduplication with zero data loss:"
+        "The results demonstrate complete deduplication across all three ingestion feeds with zero data loss:"
     )
 
     res_tbl = doc.add_table(rows=1, cols=3)
@@ -314,7 +314,7 @@ def build_doc(output_path):
     res_headers = ["Metric / Stage", "Observed Count", "Significance"]
     res_data = [
         ["Total Seeded Ingestion Documents", "24 documents", "8 unique threat entities across 3 feeds."],
-        ["Distinct Normalized Entity Keys", "8 keys", "Exact 1:1 mapping with true entities."],
+        ["Distinct Normalized Entity Keys", "8 keys", "Exact 1:1 mapping with true threat entities."],
         ["Duplicate Merge Groups", "8 groups", "Every multi-source entity successfully matched."],
         ["Canonical Documents Updated ($set)", "8 documents", "Enriched with unified aliases, sources, and IOCs."],
         ["Secondary Documents Purged (delete_many)", "16 documents", "Redundant records safely eliminated."],
@@ -323,31 +323,38 @@ def build_doc(output_path):
     ]
     format_table(res_tbl, res_widths, res_headers, res_data, header_bg="005A9E")
 
-    doc.add_paragraph("\nSample Golden Merged Record in MongoDB (`pranav_098`):")
+    doc.add_paragraph("\nSample Golden Merged Record in MongoDB (`lazarus_group_dprk`):")
     
     sample_json = (
         "{\n"
-        '  "_id": ObjectId("6ac3d2dba20541ee67a324c8"),\n'
-        '  "entity_id": "pranav-098-vt",\n'
+        '  "_id": ObjectId("6ac3d9f112ca67ab5ccedb67"),\n'
+        '  "entity_id": "lazarus-group-dprk-vt-scan",\n'
         '  "data_source": "virustotal",\n'
-        '  "threat_actors": ["K. Pranav Reddy"],\n'
-        '  "severity": "LOW",\n'
-        '  "confidence": 90,\n'
+        '  "threat_actors": ["APT38", "Hidden Cobra", "Lazarus Group"],\n'
+        '  "severity": "CRITICAL",\n'
+        '  "confidence": 102,\n'
+        '  "cves": ["CVE-2024-21338", "CVE-2024-8726"],\n'
+        '  "tags": ["bank-heist", "byovd", "cryptocurrency", "dprk", "nation-state", "vt-enriched"],\n'
+        '  "iocs": [\n'
+        '    {"type": "ip", "value": "175.45.176.1", "confidence": 95},\n'
+        '    {"type": "sha256", "value": "7c4a8d09ca3762af61e59520943dc26494f8941b523a4982a7a57a92cfb371b2", "confidence": 99},\n'
+        '    {"type": "ip", "value": "10.54.18.64", "confidence": 60}\n'
+        '  ],\n'
         '  "aliases": [\n'
-        '    "CTI_Pranav_098",\n'
-        '    "k.pranav_roll_no_098",\n'
-        '    "pranav-098-vt"\n'
+        '    "ASR_Lazarus_Group_DPRK_entry",\n'
+        '    "CTI_Lazarus_Group_DPRK_alert",\n'
+        '    "lazarus-group-dprk-vt-scan"\n'
         '  ],\n'
         '  "sources": [\n'
         '    "cti_digest",\n'
         '    "github_awesome_report",\n'
         '    "virustotal"\n'
         '  ],\n'
-        '  "first_seen": ISODate("2026-04-19T16:39:55.042Z"),\n'
-        '  "last_seen": ISODate("2026-10-05T15:39:55.042Z"),\n'
+        '  "first_seen": ISODate("2026-07-29T17:10:09.659Z"),\n'
+        '  "last_seen": ISODate("2026-10-04T19:10:09.659Z"),\n'
         '  "merged_count": 3,\n'
         '  "merge_strategy": "source_priority_union",\n'
-        '  "updated_at": ISODate("2026-10-05T16:39:55.181Z")\n'
+        '  "updated_at": ISODate("2026-10-05T17:10:09.864Z")\n'
         "}"
     )
 
