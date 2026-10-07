@@ -496,6 +496,9 @@
                 </p>
               </div>
               <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn" id="btn-entity-seed" onclick="seedEntityData()">
+                  🌱 Seed 24 Threat Records
+                </button>
                 <button class="btn" id="btn-entity-dryrun" onclick="triggerEntityPipeline(false)">
                   🔍 Run Dry-Run Preview
                 </button>
@@ -516,7 +519,7 @@
               <svg width="14" height="14" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5">
                 <circle cx="5.5" cy="5.5" r="4"/><path d="M8.5 8.5L12 12"/>
               </svg>
-              <input type="text" class="search-input" id="entity-search-input" placeholder="Search by entity alias, actor, or tag (e.g. pranav, lockbit)..." oninput="loadEntities()">
+              <input type="text" class="search-input" id="entity-search-input" placeholder="Search by threat actor, alias, or tag (e.g. lockbit, lazarus, sandworm)..." oninput="loadEntities()">
             </div>
             <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-left:auto;" id="entity-count-label">--</span>
           </div>

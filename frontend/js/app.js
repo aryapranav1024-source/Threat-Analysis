@@ -1026,6 +1026,38 @@ async function triggerEntityPipeline(isLive) {
   }
 }
 
+async function seedEntityData() {
+  const btn = document.getElementById('btn-entity-seed');
+  const logBox = document.getElementById('entity-pipeline-log');
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Seeding Data...';
+  }
+  if (logBox) {
+    logBox.style.display = 'block';
+    logBox.textContent = 'Seeding 24 raw cross-source threat records across CTI Digest, VirusTotal, and Awesome Annual Reports...\n';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/entity-resolution/seed`, { method: 'POST' });
+    const data = await res.json();
+    if (logBox) {
+      logBox.textContent = data.output || '24 raw threat records seeded successfully!';
+    }
+    showToast('Seeded 24 raw threat records!');
+    loadEntities();
+  } catch (err) {
+    if (logBox) logBox.textContent += `\n[ERROR] Seeding failed: ${err.message}`;
+    showToast('Failed to seed records');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '🌱 Seed 24 Threat Records';
+    }
+  }
+}
+
 // ── UTILITIES ─────────────────────────────────────────────────────────
 
 function esc(str) {

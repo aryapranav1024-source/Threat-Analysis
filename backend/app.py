@@ -78,6 +78,12 @@ async def lifespan(app):
             subprocess.run([_sys.executable, "seed_cti_data.py"], timeout=180, cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         except Exception as e:
             print(f"[WARNING] Auto-seed failed: {e}")
+    if db["threat_entities"].count_documents({}) == 0:
+        try:
+            import subprocess, sys as _sys
+            subprocess.run([_sys.executable, "entity_resolution_pipeline.py", "--seed", "--live"], timeout=180, cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        except Exception as e:
+            print(f"[WARNING] Auto-seed threat entities failed: {e}")
     yield
 
 app.router.lifespan_context = lifespan
@@ -208,10 +214,13 @@ def get_resolved_entities(q: Optional[str] = None):
 
 
 @app.post("/api/entity-resolution/run")
-def run_entity_resolution_endpoint(live: bool = False):
+def run_entity_resolution_endpoint(live: bool = False, seed: bool = False):
     """Trigger the Entity Resolution pipeline (dry_run by default)."""
     import subprocess
     cmd = [sys.executable, "entity_resolution_pipeline.py"]
+    # If the collection is empty, or user explicitly requested seed, pass --seed
+    if seed or db["threat_entities"].count_documents({}) == 0:
+        cmd.append("--seed")
     if live:
         cmd.append("--live")
     result = subprocess.run(
@@ -223,8 +232,26 @@ def run_entity_resolution_endpoint(live: bool = False):
     return {
         "status": "success" if result.returncode == 0 else "error",
         "mode": "live" if live else "dry_run",
-        "output": result.stdout[-2000:],
+        "output": result.stdout[-3000:],
         "remaining_entities": db["threat_entities"].count_documents({})
+    }
+
+
+@app.post("/api/entity-resolution/seed")
+def seed_entity_resolution_endpoint():
+    """Seed 24 raw cross-source threat records across CTI, VirusTotal, and Awesome Report."""
+    import subprocess
+    cmd = [sys.executable, "entity_resolution_pipeline.py", "--seed"]
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
+    return {
+        "status": "success" if result.returncode == 0 else "error",
+        "output": result.stdout[-3000:],
+        "total_documents": db["threat_entities"].count_documents({})
     }
 
 

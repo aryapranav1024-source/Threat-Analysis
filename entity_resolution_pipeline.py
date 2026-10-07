@@ -310,8 +310,9 @@ def execute_entity_resolution(dry_run: bool = True):
 
     total_docs = col.count_documents({})
     if total_docs == 0:
-        console.print("[yellow]  No documents found in '{COLLECTION_NAME}'. Run with --seed to populate test data.[/yellow]")
-        return
+        console.print(f"[yellow]  Collection '{COLLECTION_NAME}' is empty. Auto-seeding 24 cross-source threat records first...[/yellow]")
+        seed_duplicate_test_data()
+        total_docs = col.count_documents({})
 
     logger.info(f"Loaded {total_docs} documents from '{COLLECTION_NAME}'")
 
