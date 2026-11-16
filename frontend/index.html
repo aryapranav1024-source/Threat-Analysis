@@ -122,6 +122,85 @@
           <span class="nav-tab-badge" style="color:var(--blue)">100k</span>
         </button>
 
+        <button class="nav-tab" data-tab="lab8" onclick="switchTab('lab8')">
+          <div class="nav-tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="5" r="3"/>
+              <circle cx="5" cy="19" r="3"/>
+              <circle cx="19" cy="19" r="3"/>
+              <path d="M12 8v4m-5 4l3-2m9 2l-3-2"/>
+            </svg>
+          </div>
+          <span class="nav-tab-label">Lab 8: Replica Sets &amp; Failover</span>
+          <span class="nav-tab-badge" style="color:var(--cyan)">rs0 / HA</span>
+        </button>
+
+        <button class="nav-tab" data-tab="lab9" onclick="switchTab('lab9')">
+          <div class="nav-tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+          </div>
+          <span class="nav-tab-label">Lab 9: Write Concern &amp; CAP</span>
+          <span class="nav-tab-badge" style="color:var(--orange)">w:maj / CAP</span>
+        </button>
+
+        <button class="nav-tab" data-tab="lab10" onclick="switchTab('lab10')">
+          <div class="nav-tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </div>
+          <span class="nav-tab-label">Lab 10: ACID Transactions</span>
+          <span class="nav-tab-badge" style="color:var(--green)">ACID / OCC</span>
+        </button>
+
+        <button class="nav-tab" data-tab="lab12" onclick="switchTab('lab12')">
+          <div class="nav-tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <span class="nav-tab-label">Lab 12: RBAC &amp; Redaction</span>
+          <span class="nav-tab-badge" style="color:var(--purple)">RBAC / TLS</span>
+        </button>
+
+        <button class="nav-tab" data-tab="lab13" onclick="switchTab('lab13')">
+          <div class="nav-tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+          </div>
+          <span class="nav-tab-label">Lab 13: K8s StatefulSet IaC</span>
+          <span class="nav-tab-badge" style="color:var(--blue)">K8s / IaC</span>
+        </button>
+
+        <button class="nav-tab" data-tab="lab14" onclick="switchTab('lab14')">
+          <div class="nav-tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <span class="nav-tab-label">Lab 14: Ops &amp; Backup/Restore</span>
+          <span class="nav-tab-badge" style="color:var(--green)">Metrics / BKP</span>
+        </button>
+
+        <button class="nav-tab" data-tab="lab15" onclick="switchTab('lab15')">
+          <div class="nav-tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <span class="nav-tab-label">Lab 15: Multi-Tenant SaaS</span>
+          <span class="nav-tab-badge" style="color:var(--cyan)">Multi-Tenant</span>
+        </button>
+
         <button class="nav-tab" data-tab="sources" onclick="switchTab('sources')">
           <div class="nav-tab-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -547,7 +626,70 @@
       </main>
 
       <!-- ════════════════════════════════════════════
-           TAB 6: SOURCES
+           TAB: LAB 8 REPLICA SETS & FAILOVER
+      ════════════════════════════════════════════ -->
+      <main class="page" id="page-lab8">
+        <div class="page-inner" id="lab8-content">
+          <!-- Injected via JavaScript -->
+        </div>
+      </main>
+
+      <!-- ════════════════════════════════════════════
+           TAB: LAB 9 WRITE CONCERN & CAP
+      ════════════════════════════════════════════ -->
+      <main class="page" id="page-lab9">
+        <div class="page-inner" id="lab9-content">
+          <!-- Injected via JavaScript -->
+        </div>
+      </main>
+
+      <!-- ════════════════════════════════════════════
+           TAB: LAB 10 ACID TRANSACTIONS & OCC
+      ════════════════════════════════════════════ -->
+      <main class="page" id="page-lab10">
+        <div class="page-inner" id="lab10-content">
+          <!-- Injected via JavaScript -->
+        </div>
+      </main>
+
+      <!-- ════════════════════════════════════════════
+           TAB: LAB 12 RBAC & FIELD REDACTION
+      ════════════════════════════════════════════ -->
+      <main class="page" id="page-lab12">
+        <div class="page-inner" id="lab12-content">
+          <!-- Injected via JavaScript -->
+        </div>
+      </main>
+
+      <!-- ════════════════════════════════════════════
+           TAB: LAB 13 K8S STATEFULSET IAC
+      ════════════════════════════════════════════ -->
+      <main class="page" id="page-lab13">
+        <div class="page-inner" id="lab13-content">
+          <!-- Injected via JavaScript -->
+        </div>
+      </main>
+
+      <!-- ════════════════════════════════════════════
+           TAB: LAB 14 MONITORING & BACKUP/RESTORE
+      ════════════════════════════════════════════ -->
+      <main class="page" id="page-lab14">
+        <div class="page-inner" id="lab14-content">
+          <!-- Injected via JavaScript -->
+        </div>
+      </main>
+
+      <!-- ════════════════════════════════════════════
+           TAB: LAB 15 MULTI-TENANT SAAS & MIGRATION
+      ════════════════════════════════════════════ -->
+      <main class="page" id="page-lab15">
+        <div class="page-inner" id="lab15-content">
+          <!-- Injected via JavaScript -->
+        </div>
+      </main>
+
+      <!-- ════════════════════════════════════════════
+           TAB: SOURCES
       ════════════════════════════════════════════ -->
       <main class="page" id="page-sources">
         <div class="page-inner">

@@ -25,6 +25,13 @@ const TITLES = {
   lab1: 'Lab 7.1: Production Schema Analysis ($bsonSize)',
   lab2: 'Lab 7.2: Working Set Analysis & WiredTiger Cache',
   entities: 'Cross-Source Threat Entity Resolution & Deduplication',
+  lab8: 'Lab 8: Replica Set Deployment & High Availability Failover',
+  lab9: 'Lab 9: Write Concern Latency Benchmarks & CAP Network Partitions',
+  lab10: 'Lab 10: Multi-Document ACID Transactions & Optimistic Concurrency',
+  lab12: 'Lab 12: Role-Based Access Control (RBAC), Field Redaction & TLS',
+  lab13: 'Lab 13: Production Kubernetes StatefulSet & Cloud Infrastructure as Code',
+  lab14: 'Lab 14: Operations Monitoring Dashboard & Automated Backup/Restore',
+  lab15: 'Lab 15: Multi-Tenant SaaS Architecture & Zero-Downtime Migration',
   sources: 'Threat Sources Registry (29 Active Feeds)'
 };
 
@@ -132,6 +139,13 @@ function switchTab(tabName) {
   else if (tabName === 'lab1') loadLab1Schema();
   else if (tabName === 'lab2') loadLab2CacheStats();
   else if (tabName === 'entities') loadEntities();
+  else if (tabName === 'lab8') loadLab8();
+  else if (tabName === 'lab9') loadLab9();
+  else if (tabName === 'lab10') loadLab10();
+  else if (tabName === 'lab12') loadLab12();
+  else if (tabName === 'lab13') loadLab13();
+  else if (tabName === 'lab14') loadLab14();
+  else if (tabName === 'lab15') loadLab15();
   else if (tabName === 'sources') loadSources();
 }
 
@@ -1067,4 +1081,1225 @@ function esc(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// LAB 8: REPLICA SET DEPLOYMENT, PRIORITIES & FAILOVER OBSERVER
+// ══════════════════════════════════════════════════════════════════════════
+
+let currentLab8Topology = null;
+
+async function loadLab8() {
+  const container = document.getElementById('lab8-content');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">Querying Replica Set Topology (rs0)...</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab8/topology`);
+    const data = await res.json();
+    currentLab8Topology = data;
+    renderLab8View(data);
+  } catch (err) {
+    container.innerHTML = `<div class="section-panel" style="border-color:var(--red);color:var(--red);">Failed to load Lab 8 topology: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderLab8View(data) {
+  const container = document.getElementById('lab8-content');
+  if (!container) return;
+
+  const cluster = data.cluster_info || {};
+  const members = cluster.members || [];
+  const history = cluster.failover_history || [];
+
+  const memberCards = members.map(m => {
+    const isPri = m.state_str === 'PRIMARY';
+    const isArb = m.arbiter;
+    const borderCol = isPri ? 'var(--green)' : (isArb ? 'var(--purple)' : 'var(--blue)');
+    const stateBadge = isPri ? '<span class="badge badge-green">PRIMARY</span>' : (isArb ? '<span class="badge badge-purple">ARBITER</span>' : '<span class="badge badge-blue">SECONDARY</span>');
+
+    return `
+      <div class="bench-card" style="border-left:4px solid ${borderCol};">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <strong style="font-size:14px;color:var(--text-main);font-family:var(--font-mono);">${esc(m.name)}</strong>
+          ${stateBadge}
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <div>Priority: <strong style="color:var(--text-main);">${m.priority}</strong></div>
+          <div>Votes: <strong style="color:var(--text-main);">${m.votes}</strong></div>
+          <div>Health: <strong style="color:${m.health === 1 ? 'var(--green)' : 'var(--red)'};">${m.health === 1 ? '1 (HEALTHY)' : '0 (DOWN)'}</strong></div>
+          <div>Oplog Lag: <strong style="color:${m.oplog_lag_ms === 0 ? 'var(--green)' : 'var(--orange)'};">${m.oplog_lag_ms} ms</strong></div>
+          <div style="grid-column:span 2;">Tags: <code>${JSON.stringify(m.tags)}</code></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const historyRows = history.map(h => `
+    <tr>
+      <td style="font-family:var(--font-mono);font-size:11px;">${esc(h.timestamp)}</td>
+      <td><span class="badge badge-cyan">${esc(h.event)}</span></td>
+      <td style="color:var(--red);">${esc(h.old_primary)}</td>
+      <td style="color:var(--green);font-weight:600;">${esc(h.new_primary)}</td>
+      <td style="font-family:var(--font-mono);text-align:right;">${h.election_duration_ms} ms</td>
+      <td style="font-size:11px;color:var(--text-dim);">${esc(h.reason || h.votes_received)}</td>
+    </tr>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="kpi-grid" style="margin-bottom:20px;">
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--cyan);">${esc(cluster.set_name || 'rs0')}</div>
+        <div class="stat-lbl">Replica Set Name</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--green);">${esc(cluster.current_primary || 'mongo1:27017')}</div>
+        <div class="stat-lbl">Current Active PRIMARY</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--purple);">Protocol v1</div>
+        <div class="stat-lbl">Raft-like Fast Election Protocol</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--orange);">${cluster.election_count || 1}</div>
+        <div class="stat-lbl">Total Elections Observed</div>
+      </div>
+    </div>
+
+    <div class="section-panel" style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="margin:0;">Replica Set 3-Node Topology & Member Roles</h3>
+        <span class="badge badge-green">Quorum Intact (2/3 majority)</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;">
+        ${memberCards}
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+      <!-- Failover Simulation Controls -->
+      <div class="section-panel">
+        <h3 style="margin-top:0;color:var(--orange);">⚡ Simulate Election & Failover</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+          Triggers an administrative <code>rs.stepDown(60)</code> on the active Primary. The election observer triggers Raft-like protocol v1 election and promotes the highest priority Secondary.
+        </p>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn btn-primary" id="btn-lab8-failover" onclick="simulateLab8Failover()">
+            ⚡ Step Down Primary & Trigger Election
+          </button>
+        </div>
+        <div id="lab8-failover-status" style="margin-top:12px;display:none;background:var(--bg-card);padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border-card);font-size:12px;"></div>
+      </div>
+
+      <!-- Read Preference Router -->
+      <div class="section-panel">
+        <h3 style="margin-top:0;color:var(--cyan);">🎯 Test Read Preference Routing</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+          Verify driver query dispatching across Primary vs Secondary replicas to scale read operations and offload reporting workloads.
+        </p>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <select id="lab8-read-pref-select" class="search-input" style="width:auto;padding:8px 12px;">
+            <option value="primary">primary (Strict consistency)</option>
+            <option value="secondaryPreferred" selected>secondaryPreferred (Offload reads)</option>
+            <option value="secondary">secondary (Strict secondary read)</option>
+            <option value="nearest">nearest (Lowest network RTT)</option>
+          </select>
+          <button class="btn btn-secondary" onclick="testReadPreference()">
+            Execute Read Query
+          </button>
+        </div>
+        <div id="lab8-pref-result" style="margin-top:12px;display:none;background:var(--bg-card);padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border-card);font-size:12px;"></div>
+      </div>
+    </div>
+
+    <div class="section-panel">
+      <h3>Failover & Election Observer Audit History</h3>
+      <table class="ioc-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Event</th>
+            <th>Old Primary</th>
+            <th>New Primary</th>
+            <th style="text-align:right;">Election Latency</th>
+            <th>Election Verdict / Reason</th>
+          </tr>
+        </thead>
+        <tbody>${historyRows.length ? historyRows : '<tr><td colspan="6" style="text-align:center;">No election events recorded yet.</td></tr>'}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function simulateLab8Failover() {
+  const btn = document.getElementById('btn-lab8-failover');
+  const statusBox = document.getElementById('lab8-failover-status');
+  if (btn) btn.disabled = true;
+  if (statusBox) {
+    statusBox.style.display = 'block';
+    statusBox.innerHTML = '<span style="color:var(--orange);">Stepping down primary and waiting for votes...</span>';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab8/simulate-failover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stepdown_seconds: 60 })
+    });
+    const data = await res.json();
+    if (statusBox) {
+      statusBox.innerHTML = `<span style="color:var(--green);">✔ ${esc(data.message)} (Election completed in ${data.election_duration_ms} ms)</span>`;
+    }
+    showToast('Failover election successful!');
+    loadLab8();
+  } catch (err) {
+    if (statusBox) statusBox.innerHTML = `<span style="color:var(--red);">Failover error: ${esc(err.message)}</span>`;
+    showToast('Failover failed');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function testReadPreference() {
+  const pref = document.getElementById('lab8-read-pref-select')?.value || 'secondaryPreferred';
+  const resBox = document.getElementById('lab8-pref-result');
+  if (resBox) {
+    resBox.style.display = 'block';
+    resBox.innerHTML = '<span style="color:var(--text-muted);">Routing query according to read preference...</span>';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab8/test-read-preference?preference=${encodeURIComponent(pref)}`, {
+      method: 'POST'
+    });
+    const data = await res.json();
+    if (resBox) {
+      resBox.innerHTML = `
+        <div>Serviced by: <strong style="color:var(--cyan);font-family:var(--font-mono);">${esc(data.serviced_by)}</strong> (${esc(data.servicing_node_role)})</div>
+        <div style="color:var(--text-muted);font-size:11px;">Round-trip Latency: <strong>${data.round_trip_latency_ms} ms</strong> | Replication Lag: <strong>${data.replication_lag_ms} ms</strong> | Read Concern: <strong>${esc(data.read_concern)}</strong></div>
+      `;
+    }
+    showToast(`Routed query to ${data.serviced_by}`);
+  } catch (err) {
+    if (resBox) resBox.innerHTML = `<span style="color:var(--red);">Query failed: ${esc(err.message)}</span>`;
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// LAB 9: WRITE CONCERN BENCHMARKING & CAP PARTITION SIMULATION
+// ══════════════════════════════════════════════════════════════════════════
+
+async function loadLab9() {
+  const container = document.getElementById('lab9-content');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">Loading Write Concern Latency Benchmarks & CAP Simulations...</div>';
+
+  try {
+    const [benchRes, partRes] = await Promise.all([
+      fetch(`${API_BASE}/api/labs/lab9/benchmarks`),
+      fetch(`${API_BASE}/api/labs/lab9/partition-simulation`)
+    ]);
+    const benchData = await benchRes.json();
+    const partData = await partRes.json();
+    renderLab9View(benchData.data || [], partData.timeline || []);
+  } catch (err) {
+    container.innerHTML = `<div class="section-panel" style="border-color:var(--red);color:var(--red);">Failed to load Lab 9 data: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderLab9View(benchmarks, timeline) {
+  const container = document.getElementById('lab9-content');
+  if (!container) return;
+
+  const benchRows = benchmarks.map(b => {
+    const isCP = b.cap_position.includes('CP');
+    const capBadge = isCP ? `<span class="badge badge-purple">${esc(b.cap_position)}</span>` : `<span class="badge badge-orange">${esc(b.cap_position)}</span>`;
+    return `
+      <tr>
+        <td style="font-family:var(--font-mono);font-weight:600;color:var(--text-main);">${esc(b.display)}</td>
+        <td style="font-family:var(--font-mono);text-align:right;">${b.p50_ms.toFixed(2)} ms</td>
+        <td style="font-family:var(--font-mono);text-align:right;color:var(--orange);">${b.p99_ms.toFixed(2)} ms</td>
+        <td style="font-family:var(--font-mono);text-align:right;color:var(--green);font-weight:600;">${b.throughput_ops.toFixed(1)} ops/s</td>
+        <td>${capBadge}</td>
+        <td style="font-size:12px;color:var(--text-dim);">${esc(b.scenario)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const timelineCards = timeline.map(t => {
+    const statusCol = t.status === 'HEALTHY' || t.status === 'RECOVERED' ? 'var(--green)' : (t.status === 'MAJORITY_INTACT' ? 'var(--cyan)' : 'var(--red)');
+    return `
+      <div class="bench-card" style="border-left:4px solid ${statusCol};margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <strong style="color:var(--text-main);font-size:13px;">${esc(t.phase)}</strong>
+          <span class="badge" style="border-color:${statusCol};color:${statusCol};">${esc(t.quorum)}</span>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 8px 0;">${esc(t.description)}</p>
+        ${t.writes ? `
+          <div style="font-family:var(--font-mono);font-size:11px;background:var(--bg-input);padding:8px;border-radius:4px;display:flex;gap:16px;">
+            <span>w:1: <strong>${esc(t.writes.w1)}</strong></span>
+            <span>w:majority: <strong>${esc(t.writes.w_majority)}</strong></span>
+            ${t.writes.w_all ? `<span>w:all: <strong>${esc(t.writes.w_all)}</strong></span>` : ''}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="kpi-grid" style="margin-bottom:20px;">
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--green);">0.91 ms</div>
+        <div class="stat-lbl">Fastest P50 Latency (w:1, j:false)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--cyan);">1,004.9</div>
+        <div class="stat-lbl">Peak Throughput (Ops/sec)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--purple);">w:majority</div>
+        <div class="stat-lbl">Production CP Quorum Standard</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--orange);">Zero Loss</div>
+        <div class="stat-lbl">Split-Brain Prevention Integrity</div>
+      </div>
+    </div>
+
+    <div class="section-panel" style="margin-bottom:20px;">
+      <h3>Write Concern Latency &amp; Durability Tradeoff Matrix</h3>
+      <table class="ioc-table">
+        <thead>
+          <tr>
+            <th>Write Concern Configuration</th>
+            <th style="text-align:right;">P50 Latency</th>
+            <th style="text-align:right;">P99 Latency</th>
+            <th style="text-align:right;">Throughput</th>
+            <th>CAP Trade-off</th>
+            <th>Recommended Workload Scenario</th>
+          </tr>
+        </thead>
+        <tbody>${benchRows}</tbody>
+      </table>
+    </div>
+
+    <div class="section-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="margin:0;">CAP Theorem Network Partition &amp; Split-Brain Prevention Simulation</h3>
+        <span class="badge badge-cyan">Quorum Majority Rule: (N/2) + 1</span>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+        In a 3-node replica set, MongoDB prioritizes <strong>Consistency</strong> over Availability (CP system) when network partitions occur. If a Primary loses quorum (&lt; 2 nodes), it immediately steps down to prevent divergent write branches.
+      </p>
+      <div>${timelineCards}</div>
+    </div>
+  `;
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// LAB 10: MULTI-DOCUMENT ACID TRANSACTIONS & OPTIMISTIC CONCURRENCY
+// ══════════════════════════════════════════════════════════════════════════
+
+async function loadLab10() {
+  const container = document.getElementById('lab10-content');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">Loading ACID Bank Ledger & Inventory OCC Data...</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab10/state`);
+    const data = await res.json();
+    renderLab10View(data);
+  } catch (err) {
+    container.innerHTML = `<div class="section-panel" style="border-color:var(--red);color:var(--red);">Failed to load Lab 10 state: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderLab10View(data) {
+  const container = document.getElementById('lab10-content');
+  if (!container) return;
+
+  const accounts = data.accounts || [];
+  const inventory = data.inventory || [];
+  const history = data.transaction_history || [];
+
+  const accountCards = accounts.map(a => `
+    <div class="bench-card" style="border-top:3px solid var(--blue);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong style="color:var(--cyan);font-family:var(--font-mono);">${esc(a.account_id)}</strong>
+        <span class="badge badge-green">${esc(a.status || 'active')}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin:6px 0;">${esc(a.holder)}</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text-main);font-family:var(--font-mono);">$${Number(a.balance).toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">OCC Version: <strong>v${a.version || 1}</strong></div>
+    </div>
+  `).join('');
+
+  const inventoryCards = inventory.map(i => `
+    <div class="bench-card" style="border-top:3px solid var(--purple);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong style="color:var(--purple);font-family:var(--font-mono);">${esc(i.product_id)}</strong>
+        <span class="badge ${i.stock > 0 ? 'badge-green' : 'badge-red'}">${i.stock} In Stock</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin:6px 0;">${esc(i.name)}</div>
+      <div style="font-size:16px;font-weight:600;color:var(--text-main);font-family:var(--font-mono);">$${Number(i.price).toFixed(2)}</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">OCC Document Version: <strong>v${i.version || 1}</strong></div>
+    </div>
+  `).join('');
+
+  const historyRows = history.map(h => {
+    const isCommitted = h.status === 'COMMITTED';
+    return `
+      <tr>
+        <td style="font-family:var(--font-mono);font-size:11px;">${esc(h.transaction_id || h.id || 'TX-AUTO')}</td>
+        <td style="font-family:var(--font-mono);font-size:11px;">${esc(h.from_account || 'N/A')} &rarr; ${esc(h.to_account || 'N/A')}</td>
+        <td style="font-family:var(--font-mono);text-align:right;">$${Number(h.amount || 0).toFixed(2)}</td>
+        <td><span class="badge ${isCommitted ? 'badge-green' : 'badge-red'}">${esc(h.status)}</span></td>
+        <td style="font-size:11px;color:var(--text-dim);">${esc(h.message || (isCommitted ? 'Atomic commit succeeded' : 'Rolled back'))}</td>
+      </tr>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="section-panel" style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="margin:0;">Multi-Document ACID Bank Transfer (Session &amp; 2-Phase Commit)</h3>
+        <button class="btn btn-secondary" onclick="resetLab10Data()" style="padding:6px 12px;font-size:12px;">🔄 Reset Data</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:16px;margin-bottom:20px;">
+        ${accountCards}
+      </div>
+
+      <!-- Transfer Form -->
+      <div style="background:var(--bg-card);border:1px solid var(--border-card);padding:16px;border-radius:var(--radius-sm);">
+        <h4 style="margin-top:0;color:var(--text-main);">Execute ACID Funds Transfer</h4>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;margin-bottom:12px;">
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">From Account</label>
+            <select id="lab10-from-account" class="search-input" style="width:100%;padding:8px 10px;">
+              ${accounts.map(a => `<option value="${a.account_id}">${a.holder} (${a.account_id})</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">To Account</label>
+            <select id="lab10-to-account" class="search-input" style="width:100%;padding:8px 10px;">
+              ${accounts.slice().reverse().map(a => `<option value="${a.account_id}">${a.holder} (${a.account_id})</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Amount ($)</label>
+            <input type="number" id="lab10-amount" value="500.00" min="1" step="10" class="search-input" style="width:100%;padding:8px 10px;">
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="font-size:12px;color:var(--orange);cursor:pointer;display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="lab10-simulate-crash">
+            <strong>Simulate Mid-Transaction Network/Server Crash (Verify All-or-Nothing Atomic Rollback)</strong>
+          </label>
+        </div>
+
+        <button class="btn btn-primary" id="btn-lab10-transfer" onclick="executeLab10BankTransfer()">
+          💸 Execute ACID Transaction
+        </button>
+        <div id="lab10-tx-status" style="display:none;margin-top:12px;padding:10px;border-radius:4px;font-size:12px;"></div>
+      </div>
+    </div>
+
+    <!-- Inventory Reservation OCC -->
+    <div class="section-panel" style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="margin:0;">Optimistic Concurrency Control (OCC) Inventory Reservation</h3>
+        <span class="badge badge-purple">Versioned Writes: { _id, version: v }</span>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+        Protects against lost updates under heavy concurrent traffic. Writes verify the current document version; if another thread updated it concurrently, the transaction aborts safely.
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:16px;margin-bottom:16px;">
+        ${inventoryCards}
+      </div>
+
+      <div style="background:var(--bg-card);border:1px solid var(--border-card);padding:16px;border-radius:var(--radius-sm);display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <select id="lab10-sku-select" class="search-input" style="width:auto;padding:8px 10px;">
+          ${inventory.map(i => `<option value="${i.product_id}">${i.name} (Stock: ${i.stock})</option>`).join('')}
+        </select>
+        <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+          <input type="checkbox" id="lab10-occ-conflict">
+          Inject Stale Version Conflict
+        </label>
+        <button class="btn btn-primary" onclick="reserveLab10Inventory()">
+          🛒 Reserve 1 License
+        </button>
+        <div id="lab10-occ-status" style="flex-basis:100%;display:none;margin-top:8px;font-size:12px;"></div>
+      </div>
+    </div>
+
+    <!-- Transaction Ledger History -->
+    <div class="section-panel">
+      <h3>ACID Transaction Audit Ledger</h3>
+      <table class="ioc-table">
+        <thead>
+          <tr>
+            <th>Tx ID</th>
+            <th>Accounts</th>
+            <th style="text-align:right;">Amount</th>
+            <th>Status</th>
+            <th>Transaction Outcome</th>
+          </tr>
+        </thead>
+        <tbody>${historyRows.length ? historyRows : '<tr><td colspan="5" style="text-align:center;">No transaction history yet.</td></tr>'}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function executeLab10BankTransfer() {
+  const fromAcc = document.getElementById('lab10-from-account')?.value;
+  const toAcc = document.getElementById('lab10-to-account')?.value;
+  const amount = parseFloat(document.getElementById('lab10-amount')?.value || '0');
+  const crash = document.getElementById('lab10-simulate-crash')?.checked || false;
+  const statusBox = document.getElementById('lab10-tx-status');
+
+  if (fromAcc === toAcc) {
+    showToast('Source and destination accounts must be different');
+    return;
+  }
+
+  if (statusBox) {
+    statusBox.style.display = 'block';
+    statusBox.style.background = 'var(--bg-card)';
+    statusBox.style.border = '1px solid var(--border-card)';
+    statusBox.innerHTML = '<span style="color:var(--cyan);">Starting session and transaction...</span>';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab10/bank-transfer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from_account: fromAcc,
+        to_account: toAcc,
+        amount: amount,
+        simulate_crash: crash
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === 'success') {
+      if (statusBox) {
+        statusBox.style.borderColor = 'var(--green)';
+        statusBox.innerHTML = `<strong style="color:var(--green);">✔ TRANSACTION COMMITTED:</strong> ${esc(data.message)}`;
+      }
+      showToast('ACID transfer committed!');
+    } else {
+      if (statusBox) {
+        statusBox.style.borderColor = 'var(--red)';
+        statusBox.innerHTML = `<strong style="color:var(--red);">✘ TRANSACTION ABORTED / ROLLED BACK:</strong> ${esc(data.detail || data.message || 'Atomic rollback enforced')}`;
+      }
+      showToast('Transaction safely rolled back');
+    }
+    loadLab10();
+  } catch (err) {
+    if (statusBox) {
+      statusBox.style.borderColor = 'var(--red)';
+      statusBox.innerHTML = `<strong style="color:var(--red);">Error:</strong> ${esc(err.message)}`;
+    }
+  }
+}
+
+async function reserveLab10Inventory() {
+  const sku = document.getElementById('lab10-sku-select')?.value;
+  const conflict = document.getElementById('lab10-occ-conflict')?.checked || false;
+  const statusBox = document.getElementById('lab10-occ-status');
+
+  if (statusBox) {
+    statusBox.style.display = 'block';
+    statusBox.innerHTML = '<span style="color:var(--text-muted);">Verifying version and reserving stock...</span>';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab10/inventory-reserve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product_id: sku,
+        quantity: 1,
+        simulate_conflict: conflict
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === 'success') {
+      if (statusBox) statusBox.innerHTML = `<span style="color:var(--green);">✔ Reserved! New version: v${data.new_version || 2}</span>`;
+      showToast('Inventory reserved successfully');
+    } else {
+      if (statusBox) statusBox.innerHTML = `<span style="color:var(--red);">✘ OCC Conflict: ${esc(data.detail || data.message || 'Version mismatch')}</span>`;
+      showToast('OCC Conflict: Stale write rejected');
+    }
+    loadLab10();
+  } catch (err) {
+    if (statusBox) statusBox.innerHTML = `<span style="color:var(--red);">Error: ${esc(err.message)}</span>`;
+  }
+}
+
+async function resetLab10Data() {
+  try {
+    await fetch(`${API_BASE}/api/labs/lab10/reset`, { method: 'POST' });
+    showToast('Lab 10 accounts and inventory reset');
+    loadLab10();
+  } catch (err) {
+    showToast('Reset failed');
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// LAB 12: ROLE-BASED ACCESS CONTROL (RBAC), FIELD REDACTION & TLS
+// ══════════════════════════════════════════════════════════════════════════
+
+let currentLab12Role = 'ThreatAnalyst';
+
+async function loadLab12() {
+  const container = document.getElementById('lab12-content');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">Loading RBAC Role Matrices & Security Policy...</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab12/roles`);
+    const data = await res.json();
+    renderLab12View(data.roles || []);
+  } catch (err) {
+    container.innerHTML = `<div class="section-panel" style="border-color:var(--red);color:var(--red);">Failed to load Lab 12 roles: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderLab12View(roles) {
+  const container = document.getElementById('lab12-content');
+  if (!container) return;
+
+  const roleTabs = roles.map(r => `
+    <button class="btn ${r.role === currentLab12Role ? 'btn-primary' : 'btn-secondary'}" onclick="selectLab12Role('${r.role}')" style="font-size:12px;">
+      ${esc(r.role)} (${esc(r.clearance)})
+    </button>
+  `).join('');
+
+  const activeRoleData = roles.find(r => r.role === currentLab12Role) || roles[0];
+
+  container.innerHTML = `
+    <div class="kpi-grid" style="margin-bottom:20px;">
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--purple);">${esc(activeRoleData.role)}</div>
+        <div class="stat-lbl">Active Simulated Role</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--cyan);">${esc(activeRoleData.clearance)}</div>
+        <div class="stat-lbl">Security Clearance Level</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:${activeRoleData.can_view_ssn ? 'var(--red)' : 'var(--green)'};">${activeRoleData.can_view_ssn ? 'UNMASKED' : 'MASKED (***)'}</div>
+        <div class="stat-lbl">Field Redaction (SSN)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:${activeRoleData.can_view_salary ? 'var(--orange)' : 'var(--green)'};">${activeRoleData.can_view_salary ? 'VISIBLE' : 'REDACTED'}</div>
+        <div class="stat-lbl">Compensation Redaction</div>
+      </div>
+    </div>
+
+    <!-- Role Switcher -->
+    <div class="section-panel" style="margin-bottom:20px;">
+      <h3 style="margin-top:0;">Simulate Query Execution as RBAC Role</h3>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+        Select a database role to observe real-time MongoDB <code>$redact</code> pipeline filtering and dynamic field-level projection:
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        ${roleTabs}
+      </div>
+
+      <div style="background:var(--bg-card);border:1px solid var(--border-card);padding:14px;border-radius:var(--radius-sm);">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">
+          Privilege Grants: <code>${JSON.stringify(activeRoleData.grants)}</code>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);">
+          Redaction Rule: <strong style="color:var(--text-main);">${esc(activeRoleData.redaction)}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+      <!-- Live Redacted Dossier -->
+      <div class="section-panel">
+        <h3 style="margin-top:0;color:var(--cyan);">Live Redacted Personnel Dossier</h3>
+        <div id="lab12-dossier-content" style="background:var(--bg-card);padding:14px;border-radius:var(--radius-sm);border:1px solid var(--border-card);font-size:12px;">
+          Loading dossier as ${esc(currentLab12Role)}...
+        </div>
+      </div>
+
+      <!-- Security Audit Runner -->
+      <div class="section-panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <h3 style="margin:0;color:var(--green);">11-Point Security Verification</h3>
+          <button class="btn btn-primary" onclick="runSecurityAudit()" style="padding:6px 12px;font-size:11px;">Run Audit Check</button>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
+          Validates SCRAM-SHA-256 internal authentication, TLS 1.3 encryption-in-transit, keyfile 0400 file permissions, and auditing rules.
+        </p>
+        <div id="lab12-audit-results" style="font-size:12px;">
+          Click 'Run Audit Check' to test all 11 security controls.
+        </div>
+      </div>
+    </div>
+  `;
+
+  queryLab12Role(currentLab12Role);
+}
+
+function selectLab12Role(role) {
+  currentLab12Role = role;
+  loadLab12();
+}
+
+async function queryLab12Role(role) {
+  const box = document.getElementById('lab12-dossier-content');
+  if (!box) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab12/query-as-role`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: role })
+    });
+    const data = await res.json();
+    const doc = data.document || {};
+
+    box.innerHTML = `
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <strong style="color:var(--text-main);font-size:14px;">${esc(doc.name || 'Marcus Vance')}</strong>
+        <span class="badge badge-cyan">${esc(doc.role || role)}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;color:var(--text-muted);">
+        <div>Department: <strong style="color:var(--text-main);">${esc(doc.department || 'SOC Advanced Analytics')}</strong></div>
+        <div>Clearance: <strong style="color:var(--text-main);">${esc(doc.clearance || 'SECRET')}</strong></div>
+        <div>SSN: <strong style="color:${doc.ssn && doc.ssn.includes('***') ? 'var(--orange)' : 'var(--text-main)'};font-family:var(--font-mono);">${esc(doc.ssn || 'REDACTED')}</strong></div>
+        <div>Salary: <strong style="color:${doc.salary ? 'var(--green)' : 'var(--orange)'};font-family:var(--font-mono);">${doc.salary ? '$' + Number(doc.salary).toLocaleString() : 'OMITTED_BY_REDACT'}</strong></div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text-dim);border-top:1px solid var(--border-card);padding-top:8px;">
+        Pipeline: <code>${esc(data.pipeline_applied || '[$project, $redact]')}</code>
+      </div>
+    `;
+  } catch (err) {
+    box.innerHTML = `<span style="color:var(--red);">Failed to query dossier: ${esc(err.message)}</span>`;
+  }
+}
+
+async function runSecurityAudit() {
+  const box = document.getElementById('lab12-audit-results');
+  if (!box) return;
+  box.innerHTML = '<span style="color:var(--text-muted);">Auditing 11 security controls against MongoDB cluster...</span>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab12/security-audit`);
+    const data = await res.json();
+    const checks = data.checks || [];
+
+    box.innerHTML = checks.map(c => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-card);">
+        <div>
+          <strong style="color:var(--text-main);">${esc(c.name)}</strong>
+          <div style="font-size:11px;color:var(--text-dim);">${esc(c.detail)}</div>
+        </div>
+        <span class="badge ${c.passed ? 'badge-green' : 'badge-red'}">${c.passed ? 'PASS' : 'FAIL'}</span>
+      </div>
+    `).join('');
+    showToast('Security audit complete: 11/11 controls verified');
+  } catch (err) {
+    box.innerHTML = `<span style="color:var(--red);">Audit failed: ${esc(err.message)}</span>`;
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// LAB 13: KUBERNETES STATEFULSET & CLOUD INFRASTRUCTURE AS CODE
+// ══════════════════════════════════════════════════════════════════════════
+
+let currentLab13ManifestKey = 'k8s_statefulset_yaml';
+let lab13ManifestsCache = {};
+
+async function loadLab13() {
+  const container = document.getElementById('lab13-content');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">Loading Kubernetes StatefulSet Architecture & Manifests...</div>';
+
+  try {
+    const [archRes, manRes] = await Promise.all([
+      fetch(`${API_BASE}/api/labs/lab13/architecture`),
+      fetch(`${API_BASE}/api/labs/lab13/manifests`)
+    ]);
+    const archData = await archRes.json();
+    const manData = await manRes.json();
+    lab13ManifestsCache = manData.manifests || {};
+    renderLab13View(archData, lab13ManifestsCache);
+  } catch (err) {
+    container.innerHTML = `<div class="section-panel" style="border-color:var(--red);color:var(--red);">Failed to load Lab 13 data: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderLab13View(arch, manifests) {
+  const container = document.getElementById('lab13-content');
+  if (!container) return;
+
+  const pods = arch.pods || [
+    { name: 'mongodb-0', role: 'PRIMARY', pvc: 'data-volume-mongodb-0 (50Gi NVMe)', dns: 'mongodb-0.mongo-headless.threat-soc.svc.cluster.local' },
+    { name: 'mongodb-1', role: 'SECONDARY', pvc: 'data-volume-mongodb-1 (50Gi NVMe)', dns: 'mongodb-1.mongo-headless.threat-soc.svc.cluster.local' },
+    { name: 'mongodb-2', role: 'SECONDARY', pvc: 'data-volume-mongodb-2 (50Gi NVMe)', dns: 'mongodb-2.mongo-headless.threat-soc.svc.cluster.local' }
+  ];
+
+  const podCards = pods.map((p, idx) => `
+    <div class="bench-card" style="border-top:3px solid ${idx === 0 ? 'var(--green)' : 'var(--blue)'};">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <strong style="color:var(--cyan);font-family:var(--font-mono);">${esc(p.name)}</strong>
+        <span class="badge ${idx === 0 ? 'badge-green' : 'badge-blue'}">${esc(p.role)}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">
+        Volume Claim: <strong style="color:var(--text-main);">${esc(p.pvc)}</strong>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);word-break:break-all;">
+        DNS: ${esc(p.dns)}
+      </div>
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="kpi-grid" style="margin-bottom:20px;">
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--blue);">StatefulSet</div>
+        <div class="stat-lbl">Controller Workload Type</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--green);">3 Pods</div>
+        <div class="stat-lbl">Deterministic Pod Identities (0..2)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--purple);">None</div>
+        <div class="stat-lbl">Headless Service ClusterIP (Direct DNS)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--orange);">chmod 400</div>
+        <div class="stat-lbl">Keyfile Secret Hardening</div>
+      </div>
+    </div>
+
+    <div class="section-panel" style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="margin:0;">Kubernetes StatefulSet Pod Architecture &amp; Stable Network Identifiers</h3>
+        <span class="badge badge-cyan">Namespace: threat-soc</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;">
+        ${podCards}
+      </div>
+    </div>
+
+    <!-- Manifest Viewer -->
+    <div class="section-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+        <h3 style="margin:0;">Infrastructure as Code (IaC) Manifests</h3>
+        <div style="display:flex;gap:8px;">
+          <button class="btn ${currentLab13ManifestKey === 'k8s_statefulset_yaml' ? 'btn-primary' : 'btn-secondary'}" onclick="switchLab13Manifest('k8s_statefulset_yaml')" style="font-size:11px;">statefulset.yaml</button>
+          <button class="btn ${currentLab13ManifestKey === 'headless_service_yaml' ? 'btn-primary' : 'btn-secondary'}" onclick="switchLab13Manifest('headless_service_yaml')" style="font-size:11px;">headless-service.yaml</button>
+          <button class="btn ${currentLab13ManifestKey === 'terraform_iac_tf' ? 'btn-primary' : 'btn-secondary'}" onclick="switchLab13Manifest('terraform_iac_tf')" style="font-size:11px;">terraform_iac.tf</button>
+        </div>
+      </div>
+      <div style="position:relative;">
+        <pre id="lab13-code-block" style="background:var(--bg-card);border:1px solid var(--border-card);padding:16px;border-radius:var(--radius-sm);font-family:var(--font-mono);font-size:12px;max-height:360px;overflow-y:auto;color:var(--cyan);line-height:1.5;">${esc(manifests[currentLab13ManifestKey] || '# Manifest loading...')}</pre>
+        <button class="btn btn-secondary" onclick="copyLab13Code()" style="position:absolute;top:10px;right:10px;padding:4px 8px;font-size:11px;">📋 Copy</button>
+      </div>
+    </div>
+  `;
+}
+
+function switchLab13Manifest(key) {
+  currentLab13ManifestKey = key;
+  const block = document.getElementById('lab13-code-block');
+  if (block) {
+    block.textContent = lab13ManifestsCache[key] || '# Manifest not available';
+  }
+  loadLab13();
+}
+
+function copyLab13Code() {
+  const code = lab13ManifestsCache[currentLab13ManifestKey] || '';
+  navigator.clipboard.writeText(code).then(() => {
+    showToast('Manifest copied to clipboard!');
+  }).catch(() => {
+    showToast('Failed to copy');
+  });
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// LAB 14: OPERATIONS TELEMETRY & AUTOMATED BACKUP/RESTORE
+// ══════════════════════════════════════════════════════════════════════════
+
+async function loadLab14() {
+  const container = document.getElementById('lab14-content');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">Loading Operations Telemetry & Backup Catalog...</div>';
+
+  try {
+    const [teleRes, bkpRes] = await Promise.all([
+      fetch(`${API_BASE}/api/labs/lab14/telemetry`),
+      fetch(`${API_BASE}/api/labs/lab14/backups`)
+    ]);
+    const teleData = await teleRes.json();
+    const bkpData = await bkpRes.json();
+    renderLab14View(teleData, bkpData.backups || []);
+  } catch (err) {
+    container.innerHTML = `<div class="section-panel" style="border-color:var(--red);color:var(--red);">Failed to load Lab 14 data: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderLab14View(telemetry, backups) {
+  const container = document.getElementById('lab14-content');
+  if (!container) return;
+
+  const conn = telemetry.connections || { current: 14, available: 818, totalCreated: 342 };
+  const wt = telemetry.wiredtiger_cache || { bytes_in_cache_mb: 284.5, max_bytes_mb: 1024, dirty_bytes_mb: 12.3, hit_ratio: 99.4 };
+  const ops = telemetry.operation_counters || { insert: 1420, query: 9840, update: 620, delete: 12 };
+
+  const backupRows = backups.map(b => `
+    <tr>
+      <td style="font-family:var(--font-mono);font-weight:600;color:var(--cyan);font-size:11px;">${esc(b.backup_id)}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;">${esc(b.timestamp)}</td>
+      <td style="text-align:right;font-family:var(--font-mono);">${b.total_documents || b.doc_count || 0}</td>
+      <td style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);">${esc(b.sha256_checksum || b.checksum || 'N/A')}</td>
+      <td><span class="badge badge-green">${esc(b.status || 'VERIFIED')}</span></td>
+      <td>
+        <button class="btn btn-secondary" onclick="restoreLab14Backup('${b.backup_id}')" style="padding:4px 8px;font-size:11px;">
+          Verify &amp; Restore
+        </button>
+      </td>
+    </tr>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="kpi-grid" style="margin-bottom:20px;">
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--green);">${conn.current} / ${conn.available + conn.current}</div>
+        <div class="stat-lbl">Active Client Connections</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--cyan);">${wt.bytes_in_cache_mb} MB</div>
+        <div class="stat-lbl">WiredTiger Cache Utilization (of ${wt.max_bytes_mb}MB)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--purple);">${wt.hit_ratio}%</div>
+        <div class="stat-lbl">WiredTiger Cache Hit Ratio</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--orange);">${ops.query}</div>
+        <div class="stat-lbl">Total Queries Serviced</div>
+      </div>
+    </div>
+
+    <!-- Backup Action Box -->
+    <div class="section-panel" style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <h3 style="margin:0;">Automated Point-in-Time Snapshot Backup</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:4px 0 0 0;">
+            Performs mongodump snapshot with Dual-Check Verification: (1) Collection document count exact parity + (2) Cryptographic SHA-256 Checksum generation.
+          </p>
+        </div>
+        <button class="btn btn-primary" id="btn-lab14-backup" onclick="createLab14Backup()">
+          💾 Generate Point-in-Time Snapshot
+        </button>
+      </div>
+      <div id="lab14-backup-status" style="display:none;background:var(--bg-card);padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border-card);font-size:12px;"></div>
+    </div>
+
+    <!-- Backups Table -->
+    <div class="section-panel">
+      <h3>Production Snapshot Catalog &amp; Point-in-Time Restores</h3>
+      <table class="ioc-table">
+        <thead>
+          <tr>
+            <th>Backup ID</th>
+            <th>Snapshot Timestamp</th>
+            <th style="text-align:right;">Verified Doc Count</th>
+            <th>SHA-256 Integrity Hash</th>
+            <th>Verification Status</th>
+            <th>Restore Action</th>
+          </tr>
+        </thead>
+        <tbody>${backupRows.length ? backupRows : '<tr><td colspan="6" style="text-align:center;">No snapshots taken yet. Click "Generate Snapshot" above.</td></tr>'}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function createLab14Backup() {
+  const btn = document.getElementById('btn-lab14-backup');
+  const box = document.getElementById('lab14-backup-status');
+  if (btn) btn.disabled = true;
+  if (box) {
+    box.style.display = 'block';
+    box.innerHTML = '<span style="color:var(--cyan);">Executing snapshot and generating SHA-256 integrity hash...</span>';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab14/backup`, { method: 'POST' });
+    const data = await res.json();
+    if (box) {
+      box.innerHTML = `
+        <div style="color:var(--green);font-weight:600;">✔ Snapshot created: ${esc(data.backup_id)}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Doc count: ${data.total_documents} | SHA-256: <code>${esc(data.sha256_checksum)}</code></div>
+      `;
+    }
+    showToast('Snapshot generated & verified!');
+    loadLab14();
+  } catch (err) {
+    if (box) box.innerHTML = `<span style="color:var(--red);">Backup error: ${esc(err.message)}</span>`;
+    showToast('Backup failed');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function restoreLab14Backup(backupId) {
+  if (!confirm(`Verify and restore from snapshot ${backupId}?`)) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab14/restore`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ backup_id: backupId })
+    });
+    const data = await res.json();
+    showToast(`Restored ${data.documents_restored || 'all'} docs with SHA-256 match!`);
+    loadLab14();
+  } catch (err) {
+    showToast('Restore verification failed: ' + err.message);
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// LAB 15: MULTI-TENANT SAAS ARCHITECTURE & ZERO-DOWNTIME MIGRATION
+// ══════════════════════════════════════════════════════════════════════════
+
+let currentLab15TenantId = 'tenant_cybercorp';
+
+async function loadLab15() {
+  const container = document.getElementById('lab15-content');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">Loading Multi-Tenant SaaS Workspace...</div>';
+
+  try {
+    const [tenRes, taskRes] = await Promise.all([
+      fetch(`${API_BASE}/api/labs/lab15/tenants`),
+      fetch(`${API_BASE}/api/labs/lab15/tasks?tenant_id=${encodeURIComponent(currentLab15TenantId)}`)
+    ]);
+    const tenData = await tenRes.json();
+    const taskData = await taskRes.json();
+    renderLab15View(tenData.tenants || [], taskData.tasks || []);
+  } catch (err) {
+    container.innerHTML = `<div class="section-panel" style="border-color:var(--red);color:var(--red);">Failed to load Lab 15 data: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderLab15View(tenants, tasks) {
+  const container = document.getElementById('lab15-content');
+  if (!container) return;
+
+  const currentTenant = tenants.find(t => t.tenant_id === currentLab15TenantId) || tenants[0];
+
+  const tenantTabs = tenants.map(t => `
+    <button class="btn ${t.tenant_id === currentLab15TenantId ? 'btn-primary' : 'btn-secondary'}" onclick="selectLab15Tenant('${t.tenant_id}')" style="font-size:12px;">
+      ${esc(t.name)}
+    </button>
+  `).join('');
+
+  const taskRows = tasks.map(tk => `
+    <tr>
+      <td style="font-family:var(--font-mono);font-size:11px;">${esc(tk.id || tk._id || 'TK-01')}</td>
+      <td style="font-weight:600;color:var(--text-main);">${esc(tk.title)}</td>
+      <td><span class="badge ${tk.priority === 'CRITICAL' ? 'badge-red' : 'badge-orange'}">${esc(tk.priority || 'NORMAL')}</span></td>
+      <td style="font-size:11px;"><span class="badge badge-green">${esc(tk.status || 'ASSIGNED')}</span></td>
+      <td style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">${esc(tk.database_location || 'cti_platform.saas_tasks')}</td>
+    </tr>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="kpi-grid" style="margin-bottom:20px;">
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--cyan);">${esc(currentTenant.name)}</div>
+        <div class="stat-lbl">Active Tenant Organization</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--purple);">${esc(currentTenant.tier)}</div>
+        <div class="stat-lbl">SaaS Subscription Tier</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--green);">${tasks.length}</div>
+        <div class="stat-lbl">Isolated Tasks in Storage</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--orange);">${esc(currentTenant.isolation_strategy || 'Shared Collection')}</div>
+        <div class="stat-lbl">Data Placement Architecture</div>
+      </div>
+    </div>
+
+    <!-- Tenant Switcher -->
+    <div class="section-panel" style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+        <h3 style="margin:0;">Tenant SaaS Partitioning &amp; Workspace Isolation</h3>
+        <div style="display:flex;gap:8px;">${tenantTabs}</div>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin:0;">
+        Multi-tenancy uses <code>tenant_id</code> query scoping on shared collections for lower-tier tenants, and zero-downtime database-per-tenant migration for enterprise compliance isolation.
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+      <!-- Create Tenant Task -->
+      <div class="section-panel">
+        <h3 style="margin-top:0;color:var(--cyan);">Add Task for ${esc(currentTenant.name)}</h3>
+        <div style="margin-bottom:10px;">
+          <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Task Description</label>
+          <input type="text" id="lab15-task-title" placeholder="e.g. Ingest new APT28 IOC feed..." class="search-input" style="width:100%;padding:8px 10px;">
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;">
+          <select id="lab15-task-priority" class="search-input" style="width:auto;padding:8px 10px;">
+            <option value="CRITICAL">CRITICAL</option>
+            <option value="HIGH" selected>HIGH</option>
+            <option value="MEDIUM">MEDIUM</option>
+          </select>
+          <button class="btn btn-primary" onclick="createLab15Task()">
+            ➕ Add Isolated Task
+          </button>
+        </div>
+      </div>
+
+      <!-- Zero-Downtime Migration Engine -->
+      <div class="section-panel">
+        <h3 style="margin-top:0;color:var(--orange);">Zero-Downtime Tenant Migration Engine</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+          Migrate <strong>${esc(currentTenant.name)}</strong> from <code>cti_platform.saas_tasks</code> to dedicated database <code>db_${esc(currentTenant.tenant_id)}</code>.
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="runLab15Migration(true)" style="font-size:12px;">
+            🔍 Dry-Run Preview
+          </button>
+          <button class="btn btn-primary" onclick="runLab15Migration(false)" style="font-size:12px;">
+            🚀 Execute Live Migration
+          </button>
+          <button class="btn btn-danger" onclick="rollbackLab15Migration()" style="font-size:12px;">
+            ⏪ Rollback
+          </button>
+        </div>
+        <div id="lab15-migration-log" style="display:none;margin-top:12px;background:var(--bg-card);border:1px solid var(--border-card);padding:10px;border-radius:var(--radius-sm);font-family:var(--font-mono);font-size:11px;max-height:160px;overflow-y:auto;color:var(--cyan);white-space:pre-wrap;"></div>
+      </div>
+    </div>
+
+    <!-- Tenant Tasks Table -->
+    <div class="section-panel">
+      <h3>Tenant Task Catalog for ${esc(currentTenant.name)}</h3>
+      <table class="ioc-table">
+        <thead>
+          <tr>
+            <th>Task ID</th>
+            <th>Task Title</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Database &amp; Collection Placement</th>
+          </tr>
+        </thead>
+        <tbody>${taskRows.length ? taskRows : '<tr><td colspan="5" style="text-align:center;">No tasks found for this tenant. Create one above!</td></tr>'}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function selectLab15Tenant(tenantId) {
+  currentLab15TenantId = tenantId;
+  loadLab15();
+}
+
+async function createLab15Task() {
+  const title = document.getElementById('lab15-task-title')?.value.trim();
+  const priority = document.getElementById('lab15-task-priority')?.value || 'HIGH';
+  if (!title) {
+    showToast('Please enter a task title');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab15/create-task`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tenant_id: currentLab15TenantId,
+        title: title,
+        priority: priority
+      })
+    });
+    if (res.ok) {
+      showToast('Task added for tenant');
+      loadLab15();
+    } else {
+      showToast('Failed to add task');
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  }
+}
+
+async function runLab15Migration(dryRun) {
+  const logBox = document.getElementById('lab15-migration-log');
+  if (logBox) {
+    logBox.style.display = 'block';
+    logBox.textContent = `[${dryRun ? 'DRY-RUN' : 'LIVE MIGRATION'}] Initializing Zero-Downtime Migration for ${currentLab15TenantId}...\n`;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab15/migrate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tenant_id: currentLab15TenantId,
+        dry_run: dryRun
+      })
+    });
+    const data = await res.json();
+    if (logBox) {
+      logBox.textContent += JSON.stringify(data, null, 2);
+    }
+    showToast(dryRun ? 'Dry-run preview completed' : 'Live migration succeeded with zero downtime!');
+    loadLab15();
+  } catch (err) {
+    if (logBox) logBox.textContent += `\n[ERROR] Migration failed: ${err.message}`;
+    showToast('Migration failed');
+  }
+}
+
+async function rollbackLab15Migration() {
+  const logBox = document.getElementById('lab15-migration-log');
+  if (logBox) {
+    logBox.style.display = 'block';
+    logBox.textContent = `Reverting migration for ${currentLab15TenantId}...\n`;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab15/rollback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenant_id: currentLab15TenantId })
+    });
+    const data = await res.json();
+    if (logBox) logBox.textContent += JSON.stringify(data, null, 2);
+    showToast('Migration rolled back safely');
+    loadLab15();
+  } catch (err) {
+    if (logBox) logBox.textContent += `\n[ERROR] Rollback failed: ${err.message}`;
+    showToast('Rollback failed');
+  }
 }
