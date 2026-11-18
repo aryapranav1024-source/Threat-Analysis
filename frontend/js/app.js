@@ -28,12 +28,14 @@ const TITLES = {
   lab8: 'Lab 8: Replica Set Deployment & High Availability Failover',
   lab9: 'Lab 9: Write Concern Latency Benchmarks & CAP Network Partitions',
   lab10: 'Lab 10: Multi-Document ACID Transactions & Optimistic Concurrency',
+  lab11: 'Lab 11: Sharding & Shard Key Analysis (Hotspot vs Hashed)',
   lab12: 'Lab 12: Role-Based Access Control (RBAC), Field Redaction & TLS',
   lab13: 'Lab 13: Production Kubernetes StatefulSet & Cloud Infrastructure as Code',
   lab14: 'Lab 14: Operations Monitoring Dashboard & Automated Backup/Restore',
   lab15: 'Lab 15: Multi-Tenant SaaS Architecture & Zero-Downtime Migration',
   lab16: 'Lab 16: Polyglot Data Modeling & Hybrid Query Service',
   lab17: 'Lab 17: RAG Pipeline & Vector Indexing (HNSW vs IVF)',
+  lab18: 'Lab 18: Comparative Capstone — NoSQL Benchmarking & Polyglot Architecture',
   sources: 'Threat Sources Registry (29 Active Feeds)'
 };
 
@@ -3422,9 +3424,8 @@ async function runLab17Query() {
           <pre style="background:rgba(0,0,0,0.3);padding:10px;border-radius:4px;font-size:11px;color:var(--text-dim);font-family:var(--font-mono);white-space:pre-wrap;max-height:140px;overflow-y:auto;margin:0;">You are a helpful NoSQL/MongoDB tutor. Answer based on the context.
 
 Context:
-${data.top_k_chunks.map(c => `[${c.source_title}] ${c.text}`).join('
+${data.top_k_chunks.map(c => `[${c.source_title}] ${c.text}`).join('\n\n')}
 
-')}
 
 Question: ${data.query}
 Answer:</pre>
