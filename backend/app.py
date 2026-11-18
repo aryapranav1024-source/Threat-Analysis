@@ -104,6 +104,47 @@ async def lifespan(app):
             subprocess.run([_sys.executable, "entity_resolution_pipeline.py", "--seed", "--live"], timeout=180, cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         except Exception as e:
             print(f"[WARNING] Auto-seed threat entities failed: {e}")
+    # Auto-seed Lab 18 fraud detection data if empty
+    try:
+        from config.connection import get_client
+        _lab18_client = get_client()
+        _fraud_db = _lab18_client["fraud_detection"]
+        if _fraud_db["transactions"].count_documents({}) < 1000:
+            print("[INFO] Lab 18: Seeding 10,000 synthetic fraud transactions...")
+            _merchants = ["Amazon","Walmart","Target","Starbucks","Shell","ATM","Apple Store","Netflix","Uber","Lyft","DoorDash","Airbnb","Delta","Marriott","Home Depot"]
+            _categories = ["retail","food","gas","entertainment","travel","utilities","healthcare","subscription","gaming","grocery"]
+            _locations = ["New York","Los Angeles","Chicago","Houston","Phoenix","Dallas","San Antonio","Austin","Seattle","Denver","Boston","Miami","Atlanta","Detroit","Portland"]
+            _devices = [f"dev_{i:04d}" for i in range(200)]
+            import random, datetime
+            _random = random.Random(42)
+            _docs = []
+            _base_date = datetime.datetime(2024, 1, 1)
+            for i in range(10000):
+                _is_fraud = _random.random() < 0.02
+                _amount = round(_random.uniform(500, 5000) if _is_fraud else _random.uniform(1, 500), 2)
+                _doc = {
+                    "transaction_id": f"TXN_{i:07d}",
+                    "user_id": f"USR_{_random.randint(1, 500):05d}",
+                    "amount": _amount,
+                    "merchant": _random.choice(_merchants),
+                    "category": _random.choice(_categories),
+                    "location": _random.choice(_locations),
+                    "device_id": _random.choice(_devices),
+                    "is_fraud": _is_fraud,
+                    "risk_score": round(_random.uniform(0.7, 1.0) if _is_fraud else _random.uniform(0.0, 0.4), 3),
+                    "timestamp": _base_date + datetime.timedelta(seconds=_random.randint(0, 365*24*3600)),
+                    "status": "flagged" if _is_fraud else "cleared"
+                }
+                _docs.append(_doc)
+            _fraud_db["transactions"].drop()
+            _fraud_db["transactions"].insert_many(_docs)
+            _fraud_db["transactions"].create_index([("user_id", 1), ("timestamp", -1)])
+            _fraud_db["transactions"].create_index([("risk_score", -1)])
+            _fraud_db["transactions"].create_index([("category", 1), ("timestamp", -1)])
+            _fraud_db["transactions"].create_index([("is_fraud", 1)])
+            print(f"[INFO] Lab 18: Seeded {len(_docs)} transactions successfully.")
+    except Exception as _e:
+        print(f"[WARNING] Lab 18 auto-seed failed: {_e}")
     yield
 
 app.router.lifespan_context = lifespan

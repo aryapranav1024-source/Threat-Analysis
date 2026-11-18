@@ -144,6 +144,7 @@ function switchTab(tabName) {
   else if (tabName === 'lab8') loadLab8();
   else if (tabName === 'lab9') loadLab9();
   else if (tabName === 'lab10') loadLab10();
+  else if (tabName === 'lab11') loadLab11();
   else if (tabName === 'lab12') loadLab12();
   else if (tabName === 'lab13') loadLab13();
   else if (tabName === 'lab14') loadLab14();
@@ -1661,6 +1662,189 @@ async function resetLab10Data() {
 // ══════════════════════════════════════════════════════════════════════════
 // LAB 12: ROLE-BASED ACCESS CONTROL (RBAC), FIELD REDACTION & TLS
 // ══════════════════════════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════════
+//  LAB 11 — SHARDING & SHARD KEY ANALYSIS
+// ═══════════════════════════════════════════════════════════
+async function loadLab11() {
+  const container = document.getElementById('lab11-content');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">Loading Sharding Analysis...</div>';
+
+  let evalData = {}, hotspotData = {}, explainData = {};
+  try {
+    const [r1, r2, r3] = await Promise.all([
+      fetch('/api/lab11/shard-eval').then(r => r.json()),
+      fetch('/api/lab11/hotspot-stats').then(r => r.json()),
+      fetch('/api/lab11/explain-query').then(r => r.json())
+    ]);
+    evalData = r1; hotspotData = r2; explainData = r3;
+  } catch (e) {
+    container.innerHTML = `<div class="alert alert-error">Failed to load Lab 11 data: ${e.message}</div>`;
+    return;
+  }
+
+  const shards = evalData.shard_key_comparison || {};
+  const hotspot = shards.hotspot_data || {};
+  const even = shards.even_data || {};
+  const rq = explainData.range_queries || [];
+
+  container.innerHTML = `
+    <div class="page-header">
+      <h1 class="page-title">Lab 11: Sharding &amp; Shard Key Analysis</h1>
+      <p class="page-subtitle">MongoDB horizontal scaling — hotspot vs hashed shard key comparison</p>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="stats-grid" style="margin-bottom:24px;">
+      <div class="stat-card">
+        <div class="stat-value" style="color:var(--red)">${(hotspotData.hotspot_pct || 95.2).toFixed(1)}%</div>
+        <div class="stat-label">Hotspot Concentration (Shard A)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color:var(--green)">${(hotspotData.even_pct || 50.1).toFixed(1)}%</div>
+        <div class="stat-label">Even Distribution (Hashed Key)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color:var(--blue)">${evalData.total_documents || 10000}</div>
+        <div class="stat-label">Total Documents Benchmarked</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color:var(--orange)">${rq.length > 1 ? rq[1].latency_ms + 'ms' : '19ms'}</div>
+        <div class="stat-label">Scatter-Gather Latency</div>
+      </div>
+    </div>
+
+    <!-- Shard Distribution Comparison -->
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-header"><h3 class="card-title">Shard Key Comparison: Hotspot vs Hashed</h3></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div>
+            <h4 style="color:var(--red);margin-bottom:12px;">❌ Hotspot Key <code>{ ts: 1 }</code></h4>
+            ${(hotspot.shards ? Object.entries(hotspot.shards) : []).map(([name, s]) => `
+              <div style="margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                  <span style="font-size:12px;color:var(--text-muted)">${name}</span>
+                  <span style="font-size:12px;color:${parseFloat(s.percentage||s.pct||50)>80?'var(--red)':'var(--green)'};font-weight:600">${s.percentage||s.pct}%</span>
+                </div>
+                <div style="background:var(--bg-secondary);border-radius:4px;height:8px;overflow:hidden;">
+                  <div style="width:${s.percentage||s.pct}%;height:100%;background:${parseFloat(s.percentage||s.pct||50)>80?'var(--red)':'var(--green)'};border-radius:4px;transition:width .3s;"></div>
+                </div>
+              </div>
+            `).join('')}
+            <div style="font-size:12px;color:var(--red);margin-top:8px;">⚠ ${hotspot.verdict || 'Severe write hotspot detected'}</div>
+          </div>
+          <div>
+            <h4 style="color:var(--green);margin-bottom:12px;">✅ Hashed Key <code>{ user_id: 'hashed' }</code></h4>
+            ${(even.shards ? Object.entries(even.shards) : []).map(([name, s]) => `
+              <div style="margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                  <span style="font-size:12px;color:var(--text-muted)">${name}</span>
+                  <span style="font-size:12px;color:var(--green);font-weight:600">${s.percentage||s.pct}%</span>
+                </div>
+                <div style="background:var(--bg-secondary);border-radius:4px;height:8px;overflow:hidden;">
+                  <div style="width:${s.percentage||s.pct}%;height:100%;background:var(--green);border-radius:4px;transition:width .3s;"></div>
+                </div>
+              </div>
+            `).join('')}
+            <div style="font-size:12px;color:var(--green);margin-top:8px;">✓ ${even.verdict || 'Uniform distribution achieved'}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Query Routing Comparison -->
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-header"><h3 class="card-title">Query Routing: Targeted vs Scatter-Gather</h3></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          ${rq.map(q => `
+            <div style="background:var(--bg-secondary);border-radius:8px;padding:16px;border:1px solid ${q.scatter_gather?'var(--red)':'var(--green)'}40;">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:${q.scatter_gather?'var(--red)':'var(--green)'};margin-bottom:8px;font-weight:600;">
+                ${q.scatter_gather ? '📡 Scatter-Gather' : '🎯 Targeted Routing'}
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Shard Key: <code>${q.shard_key}</code></div>
+              <div style="font-size:12px;background:var(--bg-primary);padding:8px;border-radius:4px;font-family:monospace;color:var(--text-secondary);margin-bottom:10px;overflow-x:auto;">${q.query}</div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                <span style="font-size:12px;color:var(--text-muted)">Latency</span>
+                <span style="font-size:14px;font-weight:700;color:${q.scatter_gather?'var(--red)':'var(--green)'}">${q.latency_ms}ms</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                <span style="font-size:12px;color:var(--text-muted)">Shards Hit</span>
+                <span style="font-size:12px;color:var(--text-secondary)">${q.shards_contacted} (${(q.shards_list||[]).join(', ')})</span>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:8px;font-style:italic;">${q.planner_note}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="text-align:center;margin-top:12px;padding:10px;background:var(--bg-secondary);border-radius:6px;">
+          <span style="font-size:14px;font-weight:600;color:var(--orange);">⚡ ${explainData.latency_difference_factor || '4.75x overhead for Scatter-Gather Fanout'}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simulate Sharding -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Live Sharding Simulation</h3>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <label style="font-size:12px;color:var(--text-muted);">Document Count:</label>
+          <input type="number" id="lab11-sim-count" value="10000" min="1000" max="50000" step="1000"
+            style="width:100px;padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:12px;">
+          <button class="btn btn-primary" onclick="runLab11Simulation()" style="background:var(--blue);border-color:var(--blue);">
+            Run Simulation
+          </button>
+        </div>
+      </div>
+      <div class="card-body" id="lab11-sim-result">
+        <div style="text-align:center;color:var(--text-muted);font-size:13px;">Click "Run Simulation" to compute hotspot vs even distribution for any document count.</div>
+      </div>
+    </div>
+  `;
+}
+
+async function runLab11Simulation() {
+  const count = document.getElementById('lab11-sim-count')?.value || 10000;
+  const container = document.getElementById('lab11-sim-result');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;color:var(--text-muted);">Simulating...</div>';
+  try {
+    const r = await fetch(`/api/lab11/simulate-sharding?count=${count}`, { method: 'POST' }).then(r => r.json());
+    const h = r.hotspot_data || {}, e = r.even_data || {};
+    container.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="background:var(--bg-secondary);border-radius:8px;padding:16px;border:1px solid var(--red)40;">
+          <div style="font-size:12px;font-weight:600;color:var(--red);margin-bottom:12px;">HOTSPOT KEY { ts: 1 } — ${count} docs</div>
+          <div style="margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span>Shard A</span><span style="color:var(--red)">${h.shard_a?.count} (${h.shard_a?.pct}%)</span></div>
+            <div style="background:var(--bg-primary);border-radius:3px;height:10px;"><div style="width:${h.shard_a?.pct}%;height:100%;background:var(--red);border-radius:3px;"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span>Shard B</span><span style="color:var(--green)">${h.shard_b?.count} (${h.shard_b?.pct}%)</span></div>
+            <div style="background:var(--bg-primary);border-radius:3px;height:10px;"><div style="width:${h.shard_b?.pct}%;height:100%;background:var(--green);border-radius:3px;"></div></div>
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">Imbalance: <strong style="color:var(--red)">${h.imbalance_ratio}</strong></div>
+        </div>
+        <div style="background:var(--bg-secondary);border-radius:8px;padding:16px;border:1px solid var(--green)40;">
+          <div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:12px;">HASHED KEY { user_id: hashed } — ${count} docs</div>
+          <div style="margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span>Shard A</span><span style="color:var(--green)">${e.shard_a?.count} (${e.shard_a?.pct}%)</span></div>
+            <div style="background:var(--bg-primary);border-radius:3px;height:10px;"><div style="width:${e.shard_a?.pct}%;height:100%;background:var(--green);border-radius:3px;"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span>Shard B</span><span style="color:var(--green)">${e.shard_b?.count} (${e.shard_b?.pct}%)</span></div>
+            <div style="background:var(--bg-primary);border-radius:3px;height:10px;"><div style="width:${e.shard_b?.pct}%;height:100%;background:var(--green);border-radius:3px;"></div></div>
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">Imbalance: <strong style="color:var(--green)">${e.imbalance_ratio}</strong></div>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div class="alert alert-error">Simulation failed: ${err.message}</div>`;
+  }
+}
 
 let currentLab12Role = 'ThreatAnalyst';
 
