@@ -33,6 +33,7 @@ const TITLES = {
   lab14: 'Lab 14: Operations Monitoring Dashboard & Automated Backup/Restore',
   lab15: 'Lab 15: Multi-Tenant SaaS Architecture & Zero-Downtime Migration',
   lab16: 'Lab 16: Polyglot Data Modeling & Hybrid Query Service',
+  lab17: 'Lab 17: RAG Pipeline & Vector Indexing (HNSW vs IVF)',
   sources: 'Threat Sources Registry (29 Active Feeds)'
 };
 
@@ -148,6 +149,8 @@ function switchTab(tabName) {
   else if (tabName === 'lab14') loadLab14();
   else if (tabName === 'lab15') loadLab15();
   else if (tabName === 'lab16') loadLab16();
+  else if (tabName === 'lab17') loadLab17();
+  else if (tabName === 'lab18') loadLab18();
   else if (tabName === 'sources') loadSources();
 }
 
@@ -2994,5 +2997,871 @@ async function seedLab16Data() {
     loadLab16();
   } catch (err) {
     showToast(`Seed failed: ${err.message}`);
+  }
+}
+
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// LAB 17: RAG PIPELINE & VECTOR INDEX COMPARISON (HNSW vs IVF)
+// ══════════════════════════════════════════════════════════════════════════
+
+let currentLab17SubTab = 'rag';
+
+async function loadLab17() {
+  const container = document.getElementById('lab17-content');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);"><div class="spinner" style="margin:0 auto 16px;"></div>Loading RAG Pipeline & Vector Indexing Studio...</div>';
+
+  try {
+    const [overviewRes, docsRes, benchRes, conceptsRes] = await Promise.all([
+      fetch(`${API_BASE}/api/labs/lab17/overview`),
+      fetch(`${API_BASE}/api/labs/lab17/documents`),
+      fetch(`${API_BASE}/api/labs/lab17/index_comparison`),
+      fetch(`${API_BASE}/api/labs/lab17/concepts`)
+    ]);
+
+    const overview = await overviewRes.json();
+    const docsData = await docsRes.json();
+    const benchData = await benchRes.json();
+    const conceptsData = await conceptsRes.json();
+
+    renderLab17View(overview, docsData, benchData, conceptsData);
+  } catch (err) {
+    container.innerHTML = `<div class="section-panel" style="border-color:var(--red);color:var(--red);">Failed to load Lab 17 data: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderLab17View(overview, docsData, benchData, conceptsData) {
+  const container = document.getElementById('lab17-content');
+  if (!container) return;
+
+  const html = `
+    <!-- Lab 17 Banner -->
+    <div class="lab-banner" style="background:linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(59, 130, 246, 0.12) 100%);border:1px solid rgba(16, 185, 129, 0.35);border-radius:var(--radius-md);padding:24px;margin-bottom:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <span class="badge" style="background:rgba(16, 185, 129, 0.2);color:var(--green);border:1px solid var(--green);font-weight:700;">LAB 17</span>
+            <span class="badge" style="background:rgba(59, 130, 246, 0.2);color:var(--cyan);border:1px solid var(--cyan);">RAG PIPELINE</span>
+            <span class="badge" style="background:rgba(139, 92, 246, 0.2);color:var(--purple);border:1px solid var(--purple);">HNSW vs IVF</span>
+            <span class="badge" style="background:rgba(234, 179, 8, 0.2);color:#eab308;border:1px solid #eab308;">STUDENT: 24BTRCL098</span>
+          </div>
+          <h1 style="font-size:22px;color:var(--heading);font-weight:800;margin:0 0 8px 0;">RAG Pipeline Architecture & Vector Indexing Benchmarks</h1>
+          <p style="font-size:13px;color:var(--text-muted);margin:0;max-width:880px;line-height:1.6;">
+            End-to-end semantic retrieval with vector embeddings, cosine similarity scoring, and LLM prompt grounding alongside empirical comparison of <strong>Hierarchical Navigable Small World (HNSW)</strong> graphs and <strong>Inverted File Index (IVF)</strong> clustering for Approximate Nearest Neighbor (ANN) search.
+          </p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <a href="https://hub.docker.com/r/aryapranav1024/nosql-lab17" target="_blank" class="btn btn-secondary" style="display:flex;align-items:center;gap:8px;font-size:12px;background:rgba(255,255,255,0.05);border:1px solid var(--border-card);color:var(--text-primary);padding:8px 12px;border-radius:var(--radius-sm);text-decoration:none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            Docker Hub Image
+          </a>
+          <button class="btn btn-primary" onclick="loadLab17()" style="background:var(--green);border-color:var(--green);display:flex;align-items:center;gap:8px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            Refresh Telemetry
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subtab Navigation -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--border-card);padding-bottom:12px;">
+      <button class="btn ${currentLab17SubTab === 'rag' ? 'btn-primary' : ''}" onclick="switchLab17SubTab('rag')" style="${currentLab17SubTab === 'rag' ? 'background:var(--green);border-color:var(--green);' : ''}">
+        Activity 1: Simple RAG Pipeline
+      </button>
+      <button class="btn ${currentLab17SubTab === 'benchmark' ? 'btn-primary' : ''}" onclick="switchLab17SubTab('benchmark')" style="${currentLab17SubTab === 'benchmark' ? 'background:var(--cyan);border-color:var(--cyan);' : ''}">
+        Activity 2: HNSW vs IVF Benchmark
+      </button>
+      <button class="btn ${currentLab17SubTab === 'concepts' ? 'btn-primary' : ''}" onclick="switchLab17SubTab('concepts')" style="${currentLab17SubTab === 'concepts' ? 'background:var(--purple);border-color:var(--purple);' : ''}">
+        Vector Search Concepts
+      </button>
+    </div>
+
+    <!-- Subtab Content -->
+    <div id="lab17-subtab-container"></div>
+  `;
+
+  container.innerHTML = html;
+  renderLab17SubTab(overview, docsData, benchData, conceptsData);
+}
+
+function switchLab17SubTab(subTab) {
+  currentLab17SubTab = subTab;
+  loadLab17();
+}
+
+function renderLab17SubTab(overview, docsData, benchData, conceptsData) {
+  const container = document.getElementById('lab17-subtab-container');
+  if (!container) return;
+
+  if (currentLab17SubTab === 'rag') {
+    renderLab17RAGTab(container, docsData);
+  } else if (currentLab17SubTab === 'benchmark') {
+    renderLab17BenchmarkTab(container, benchData);
+  } else if (currentLab17SubTab === 'concepts') {
+    renderLab17ConceptsTab(container, conceptsData);
+  }
+}
+
+function renderLab17RAGTab(container, docsData) {
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:20px;">
+      <!-- Left Column: Interactive RAG Query Studio -->
+      <div>
+        <div class="section-panel" style="margin-bottom:20px;">
+          <h3 style="font-size:16px;color:var(--heading);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Interactive Query & Prompt Construction
+          </h3>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+            Submit a question. The pipeline embeds the question, performs brute-force cosine similarity against all chunk embeddings, extracts the top-k passages, and constructs an augmented prompt.
+          </p>
+
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+            <div style="display:flex;gap:10px;">
+              <input type="text" id="lab17-query-input" value="What is HNSW and how is it used in MongoDB?" class="search-input" style="flex:1;background:var(--bg-input);padding:10px 14px;border:1px solid var(--border-card);border-radius:var(--radius-sm);font-size:13px;" placeholder="Ask a question about NoSQL, Aggregation, Vectors, or Replica Sets...">
+              <button class="btn btn-primary" onclick="runLab17Query()" style="background:var(--green);border-color:var(--green);white-space:nowrap;">
+                Execute RAG
+              </button>
+            </div>
+            
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <span style="font-size:11px;color:var(--text-muted);">Quick Presets:</span>
+              <button class="btn" onclick="setLab17Query('What are the four NoSQL database families?')" style="font-size:11px;padding:4px 8px;">NoSQL Families</button>
+              <button class="btn" onclick="setLab17Query('How does the aggregation framework pipeline work?')" style="font-size:11px;padding:4px 8px;">Aggregation Pipeline</button>
+              <button class="btn" onclick="setLab17Query('What is HNSW and how is it used in MongoDB?')" style="font-size:11px;padding:4px 8px;">HNSW & Atlas</button>
+              <button class="btn" onclick="setLab17Query('How does replica set failover work?')" style="font-size:11px;padding:4px 8px;">Replica Failover</button>
+            </div>
+          </div>
+
+          <div id="lab17-rag-results">
+            <div style="padding:20px;text-align:center;color:var(--text-muted);border:1px dashed var(--border-card);border-radius:var(--radius-sm);">
+              Click <strong>Execute RAG</strong> or choose a preset question to run semantic retrieval.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Document Knowledge Base Chunks -->
+      <div>
+        <div class="section-panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="font-size:15px;color:var(--heading);margin:0;display:flex;align-items:center;gap:8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Seeded Knowledge Chunks (${docsData.total_chunks})
+            </h3>
+            <span class="badge" style="font-size:11px;">50 Words / Chunk</span>
+          </div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+            Documents are split into 50-word passages and mapped into 384-dimensional unit-normalized vector space.
+          </p>
+
+          <div style="max-height:550px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;">
+            ${docsData.chunks.map((c, i) => `
+              <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:var(--radius-sm);padding:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                  <span style="font-weight:700;font-size:12px;color:var(--cyan);">${esc(c.source_title)}</span>
+                  <span class="badge" style="font-size:10px;">Chunk #${c.chunk_index}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">${esc(c.text)}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Auto run initial query
+  runLab17Query();
+}
+
+function setLab17Query(q) {
+  const inp = document.getElementById('lab17-query-input');
+  if (inp) {
+    inp.value = q;
+    runLab17Query();
+  }
+}
+
+async function runLab17Query() {
+  const inp = document.getElementById('lab17-query-input');
+  const resultsDiv = document.getElementById('lab17-rag-results');
+  if (!inp || !resultsDiv) return;
+
+  const query = inp.value.trim();
+  if (!query) return;
+
+  resultsDiv.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);"><div class="spinner" style="margin:0 auto 10px;"></div>Computing embeddings & cosine similarities...</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab17/rag?query=${encodeURIComponent(query)}`);
+    const data = await res.json();
+
+    resultsDiv.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <!-- Top Retrieved Chunks Table -->
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:13px;font-weight:700;color:var(--heading);">Top Retrieved Chunks (Cosine Similarity)</span>
+            <span style="font-size:11px;color:var(--text-dim);">${data.elapsed_ms} ms</span>
+          </div>
+          <table class="data-table" style="width:100%;font-size:12px;">
+            <thead>
+              <tr>
+                <th style="width:80px;text-align:right;">Score</th>
+                <th style="width:180px;">Source Document</th>
+                <th>Content Passage</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.top_k_chunks.map((c, i) => `
+                <tr style="${i === 0 ? 'background:rgba(16, 185, 129, 0.08);' : ''}">
+                  <td style="font-family:var(--font-mono);font-weight:700;text-align:right;color:${c.score > 0.05 ? 'var(--green)' : 'var(--text-muted)'};">
+                    ${c.score.toFixed(4)}
+                  </td>
+                  <td style="color:var(--cyan);font-weight:600;">${esc(c.source_title)} [Chunk ${c.chunk_index}]</td>
+                  <td style="color:var(--text-secondary);line-height:1.4;">${esc(c.text)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Augmented LLM Prompt Box -->
+        <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:var(--radius-sm);padding:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:12px;font-weight:700;color:var(--heading);">Synthesized Prompt Context (${data.prompt_length} chars)</span>
+            <span class="badge" style="background:rgba(59, 130, 246, 0.15);color:var(--cyan);font-size:10px;">Ready for LLM</span>
+          </div>
+          <pre style="background:rgba(0,0,0,0.3);padding:10px;border-radius:4px;font-size:11px;color:var(--text-dim);font-family:var(--font-mono);white-space:pre-wrap;max-height:140px;overflow-y:auto;margin:0;">You are a helpful NoSQL/MongoDB tutor. Answer based on the context.
+
+Context:
+${data.top_k_chunks.map(c => `[${c.source_title}] ${c.text}`).join('
+
+')}
+
+Question: ${data.query}
+Answer:</pre>
+        </div>
+
+        <!-- Simulated Response -->
+        <div style="background:rgba(16, 185, 129, 0.05);border:1px solid rgba(16, 185, 129, 0.2);border-radius:var(--radius-sm);padding:14px;">
+          <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Simulated Assistant Response
+          </div>
+          <div style="font-size:13px;color:var(--text-primary);line-height:1.5;">
+            ${data.mock_llm_response}
+          </div>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    resultsDiv.innerHTML = `<div style="color:var(--red);padding:10px;">Error running query: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderLab17BenchmarkTab(container, benchData) {
+  container.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      <!-- Benchmark Summary Matrix -->
+      <div class="section-panel">
+        <h3 style="font-size:16px;color:var(--heading);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          ANN Vector Indexing Benchmark (N=3,000 vectors, dim=64, k=10)
+        </h3>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+          Comparing exact brute-force search against <strong>IVF (Inverted File Index)</strong> clustering and <strong>Simplified NSW (HNSW-like)</strong> graph traversal on ground-truth recall and vectors compared.
+        </p>
+
+        <table class="data-table" style="width:100%;font-size:13px;">
+          <thead>
+            <tr>
+              <th>Index Type</th>
+              <th style="text-align:right;">Build Time (ms)</th>
+              <th style="text-align:right;">Vectors Compared / Query</th>
+              <th style="text-align:right;">Avg Query Time (ms)</th>
+              <th style="text-align:right;">Recall@10</th>
+              <th>Trade-off Profile</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:700;color:var(--cyan);">Brute-force (exact)</td>
+              <td style="text-align:right;font-family:var(--font-mono);">0.0 ms</td>
+              <td style="text-align:right;font-family:var(--font-mono);font-weight:700;">3,000 (100%)</td>
+              <td style="text-align:right;font-family:var(--font-mono);">0.148 ms</td>
+              <td style="text-align:right;font-family:var(--font-mono);color:var(--green);font-weight:700;">100.00%</td>
+              <td style="color:var(--text-muted);font-size:12px;">Ground truth baseline. O(N) linear comparisons.</td>
+            </tr>
+            <tr>
+              <td style="font-weight:700;color:var(--yellow);">IVF (nlist=20, nprobe=3)</td>
+              <td style="text-align:right;font-family:var(--font-mono);">11.7 ms</td>
+              <td style="text-align:right;font-family:var(--font-mono);font-weight:700;color:var(--yellow);">447 (15%)</td>
+              <td style="text-align:right;font-family:var(--font-mono);">0.037 ms</td>
+              <td style="text-align:right;font-family:var(--font-mono);font-weight:700;color:var(--yellow);">42.00%</td>
+              <td style="color:var(--text-muted);font-size:12px;">Fast cluster filtering. Trades recall for minimal comparisons.</td>
+            </tr>
+            <tr style="background:rgba(139, 92, 246, 0.08);">
+              <td style="font-weight:700;color:var(--purple);">Simplified NSW (HNSW-like)</td>
+              <td style="text-align:right;font-family:var(--font-mono);">180.6 ms</td>
+              <td style="text-align:right;font-family:var(--font-mono);font-weight:700;color:var(--purple);">1,810 (60%)</td>
+              <td style="text-align:right;font-family:var(--font-mono);">5.054 ms</td>
+              <td style="text-align:right;font-family:var(--font-mono);color:var(--purple);font-weight:700;">91.50%</td>
+              <td style="color:var(--text-muted);font-size:12px;">Greedy graph search. Superior recall (91.5%) via edge traversal.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Key Engineering Takeaways Callout -->
+      <div style="background:linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);border:1px solid rgba(139, 92, 246, 0.25);border-radius:var(--radius-md);padding:20px;">
+        <h4 style="font-size:14px;color:var(--heading);margin:0 0 10px 0;display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Why "Vectors Compared Per Query" is the Critical Metric
+        </h4>
+        <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+          <p style="margin:0 0 8px 0;">
+            1. <strong>Production Scaling:</strong> In a production cluster with 10 million vectors, brute-force search requires 10,000,000 dot products per query. In contrast, an HNSW graph touches only a few thousand nodes regardless of dataset size (logarithmic scaling).
+          </p>
+          <p style="margin:0 0 8px 0;">
+            2. <strong>Pure-Python vs Native C++ Implementations:</strong> In Python, wall-clock query times are distorted by per-node interpreter and heap-push overheads. MongoDB Atlas uses native multi-layer C++ HNSW graphs where each node traversal takes nanoseconds, translating fewer vector comparisons directly into sub-millisecond p99 latencies.
+          </p>
+          <p style="margin:0;">
+            3. <strong>Tunable Trade-offs:</strong> Increasing <code>nprobe</code> in IVF or <code>ef_search</code> in HNSW monotonically increases both Recall@k and vectors compared, allowing engineers to calibrate the exact trade-off required for their SLAs.
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderLab17ConceptsTab(container, conceptsData) {
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:16px;">
+      ${conceptsData.concepts.map(c => `
+        <div class="section-panel" style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:24px;">${c.icon}</span>
+            <h4 style="font-size:15px;color:var(--heading);margin:0;">${esc(c.title)}</h4>
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.5;">${esc(c.explanation)}</div>
+          <div style="font-size:11px;color:var(--cyan);background:rgba(59, 130, 246, 0.08);padding:8px 12px;border-radius:var(--radius-sm);border:1px solid rgba(59, 130, 246, 0.15);font-family:var(--font-mono);">
+            ${esc(c.detail)}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// LAB 18: COMPARATIVE CAPSTONE BENCHMARK & POLYGLOT PERSISTENCE
+// MongoDB (Measured) vs Apache Cassandra (Estimated) vs Neo4j (Estimated)
+// Student: K. Pranav Reddy (24BTRCL098)
+// ══════════════════════════════════════════════════════════════════════════
+
+let currentLab18SubTab = 'benchmark';
+let lab18CachedData = null;
+
+async function loadLab18() {
+  const container = document.getElementById('lab18-content');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);"><div class="spinner" style="margin:0 auto 16px;"></div>Loading Comparative Capstone Benchmark Studio...</div>';
+
+  try {
+    const [overviewRes, benchRes, archRes, ringsRes] = await Promise.all([
+      fetch(`${API_BASE}/api/labs/lab18/overview`),
+      fetch(`${API_BASE}/api/labs/lab18/benchmark`),
+      fetch(`${API_BASE}/api/labs/lab18/architecture_comparison`),
+      fetch(`${API_BASE}/api/labs/lab18/fraud_rings`)
+    ]);
+
+    const overview = await overviewRes.json();
+    const benchData = await benchRes.json();
+    const archData = await archRes.json();
+    const ringsData = await ringsRes.json();
+
+    lab18CachedData = { overview, benchData, archData, ringsData };
+    renderLab18View(overview, benchData, archData, ringsData);
+  } catch (err) {
+    container.innerHTML = `<div class="section-panel" style="border-color:var(--red);color:var(--red);">Failed to load Lab 18 data: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderLab18View(overview, benchData, archData, ringsData) {
+  const container = document.getElementById('lab18-content');
+  if (!container) return;
+
+  const html = `
+    <!-- Lab 18 Banner -->
+    <div class="lab-banner" style="background:linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%);border:1px solid rgba(6, 182, 212, 0.35);border-radius:var(--radius-md);padding:24px;margin-bottom:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <span class="badge" style="background:rgba(6, 182, 212, 0.2);color:var(--cyan);border:1px solid var(--cyan);font-weight:700;">LAB 18</span>
+            <span class="badge" style="background:rgba(16, 185, 129, 0.2);color:var(--green);border:1px solid var(--green);">CAPSTONE BENCHMARK</span>
+            <span class="badge" style="background:rgba(139, 92, 246, 0.2);color:var(--purple);border:1px solid var(--purple);">POLYGLOT ARCHITECTURE</span>
+            <span class="badge" style="background:rgba(234, 179, 8, 0.2);color:#eab308;border:1px solid #eab308;">STUDENT: 24BTRCL098</span>
+          </div>
+          <h1 style="font-size:22px;color:var(--heading);font-weight:800;margin:0 0 8px 0;">Comparative Capstone: NoSQL Database Benchmarking</h1>
+          <p style="font-size:13px;color:var(--text-muted);margin:0;max-width:880px;line-height:1.6;">
+            Empirical benchmarking of <strong>MongoDB v7.0 (Measured)</strong> against architectural cost models for <strong>Apache Cassandra</strong> and <strong>Neo4j</strong> across a 10,000 synthetic financial transaction fraud detection workload (~2.0% ground-truth fraud rate).
+          </p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <a href="https://hub.docker.com/r/aryapranav1024/nosql-lab18" target="_blank" class="btn btn-secondary" style="display:flex;align-items:center;gap:8px;font-size:12px;background:rgba(255,255,255,0.05);border:1px solid var(--border-card);color:var(--text-primary);padding:8px 12px;border-radius:var(--radius-sm);text-decoration:none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            Docker Hub Image
+          </a>
+          <button class="btn btn-primary" onclick="runLiveLab18Benchmark()" id="btn-run-bench" style="background:var(--cyan);border-color:var(--cyan);display:flex;align-items:center;gap:8px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Run Live Benchmark
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Telemetry Status Pills -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:16px;margin-bottom:24px;">
+      <div class="card" style="padding:16px;border-left:4px solid var(--green);">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:600;">Primary Target</div>
+        <div style="font-size:18px;font-weight:700;color:var(--heading);margin:4px 0;">MongoDB 7.0</div>
+        <div style="font-size:12px;color:var(--green);font-weight:600;">[MEASURED] Live WiredTiger</div>
+      </div>
+      <div class="card" style="padding:16px;border-left:4px solid var(--orange);">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:600;">Baseline Ingestion</div>
+        <div style="font-size:18px;font-weight:700;color:var(--heading);margin:4px 0;">Apache Cassandra</div>
+        <div style="font-size:12px;color:var(--orange);font-weight:600;">[ESTIMATED] LSM-Tree Model</div>
+      </div>
+      <div class="card" style="padding:16px;border-left:4px solid var(--purple);">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:600;">Baseline Graph</div>
+        <div style="font-size:18px;font-weight:700;color:var(--heading);margin:4px 0;">Neo4j Graph Engine</div>
+        <div style="font-size:12px;color:var(--purple);font-weight:600;">[ESTIMATED] Index-Free Adjacency</div>
+      </div>
+      <div class="card" style="padding:16px;border-left:4px solid var(--cyan);">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:600;">Ground-Truth Dataset</div>
+        <div style="font-size:18px;font-weight:700;color:var(--heading);margin:4px 0;">10,000 Txns</div>
+        <div style="font-size:12px;color:var(--cyan);font-weight:600;">2.0% Calibrated Fraud Rate</div>
+      </div>
+    </div>
+
+    <!-- Subtab Navigation -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--border-card);padding-bottom:12px;flex-wrap:wrap;">
+      <button class="btn ${currentLab18SubTab === 'benchmark' ? 'btn-primary' : ''}" onclick="switchLab18SubTab('benchmark')" style="${currentLab18SubTab === 'benchmark' ? 'background:var(--cyan);border-color:var(--cyan);' : ''}">
+        Activity 1: Benchmark Matrix
+      </button>
+      <button class="btn ${currentLab18SubTab === 'rings' ? 'btn-primary' : ''}" onclick="switchLab18SubTab('rings')" style="${currentLab18SubTab === 'rings' ? 'background:var(--purple);border-color:var(--purple);' : ''}">
+        Q5: Syndicate Fraud Rings (Graph)
+      </button>
+      <button class="btn ${currentLab18SubTab === 'ledger' ? 'btn-primary' : ''}" onclick="switchLab18SubTab('ledger')" style="${currentLab18SubTab === 'ledger' ? 'background:var(--green);border-color:var(--green);' : ''}">
+        Transaction Ledger (10k Dataset)
+      </button>
+      <button class="btn ${currentLab18SubTab === 'architecture' ? 'btn-primary' : ''}" onclick="switchLab18SubTab('architecture')" style="${currentLab18SubTab === 'architecture' ? 'background:var(--orange);border-color:var(--orange);' : ''}">
+        Activity 2: Polyglot Blueprint
+      </button>
+    </div>
+
+    <!-- Subtab Content Container -->
+    <div id="lab18-subtab-container">
+      ${renderLab18SubTabContent(benchData, archData, ringsData)}
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+function switchLab18SubTab(subTab) {
+  currentLab18SubTab = subTab;
+  if (!lab18CachedData) return;
+  const container = document.getElementById('lab18-subtab-container');
+  if (container) {
+    container.innerHTML = renderLab18SubTabContent(lab18CachedData.benchData, lab18CachedData.archData, lab18CachedData.ringsData);
+    if (subTab === 'ledger') loadLab18Transactions();
+  }
+  // Update button active states
+  renderLab18View(lab18CachedData.overview, lab18CachedData.benchData, lab18CachedData.archData, lab18CachedData.ringsData);
+}
+
+function renderLab18SubTabContent(benchData, archData, ringsData) {
+  if (currentLab18SubTab === 'benchmark') {
+    return renderLab18BenchmarkTab(benchData);
+  } else if (currentLab18SubTab === 'rings') {
+    return renderLab18FraudRingsTab(ringsData);
+  } else if (currentLab18SubTab === 'ledger') {
+    return renderLab18TransactionsTab();
+  } else if (currentLab18SubTab === 'architecture') {
+    return renderLab18ArchitectureTab(archData);
+  }
+  return '';
+}
+
+function renderLab18BenchmarkTab(benchData) {
+  const matrix = benchData.matrix || [];
+
+  let rowsHtml = '';
+  matrix.forEach(row => {
+    let mongoMetric = '';
+    let cassMetric = '';
+    let neoMetric = '';
+
+    if (row.query_id === 'Q4') {
+      mongoMetric = `<div style="font-weight:700;color:var(--green);font-size:15px;">${row.mongodb_measured.throughput_ops_sec?.toLocaleString()} ops/s</div><div style="font-size:11px;color:var(--text-muted);">${row.mongodb_measured.latency_ms} ms/op</div>`;
+      cassMetric = `<div style="font-weight:700;color:var(--orange);font-size:15px;">22,000 - 35,000 ops/s</div><div style="font-size:11px;color:var(--text-muted);">0.035 ms/op (MemTable)</div>`;
+      neoMetric = `<div style="font-weight:700;color:var(--purple);font-size:15px;">1,100 - 2,200 ops/s</div><div style="font-size:11px;color:var(--text-muted);">0.650 ms/op (ACID)</div>`;
+    } else {
+      mongoMetric = `<div style="font-weight:700;color:var(--green);font-size:15px;">${row.mongodb_measured.latency_ms} ms</div><div style="font-size:11px;color:var(--text-muted);">P95: ${row.mongodb_measured.p95_ms} ms</div>`;
+      cassMetric = `<div style="font-weight:700;color:var(--orange);font-size:15px;">${row.cassandra_estimated.latency_range}</div><div style="font-size:11px;color:var(--text-muted);">${row.cassandra_estimated.latency_ms ? row.cassandra_estimated.latency_ms + ' ms est.' : 'N/A in CQL'}</div>`;
+      neoMetric = `<div style="font-weight:700;color:var(--purple);font-size:15px;">${row.neo4j_estimated.latency_range}</div><div style="font-size:11px;color:var(--text-muted);">${row.neo4j_estimated.latency_ms} ms est.</div>`;
+    }
+
+    rowsHtml += `
+      <tr style="border-bottom:1px solid var(--border-card);">
+        <td style="padding:14px;">
+          <div style="font-weight:700;color:var(--heading);font-size:14px;">${esc(row.query_id)}: ${esc(row.name)}</div>
+          <div style="font-size:11px;color:var(--cyan);margin-top:2px;">${esc(row.access_pattern)}</div>
+        </td>
+        <td style="padding:14px;background:rgba(16, 185, 129, 0.04);">
+          ${mongoMetric}
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${esc(row.mongodb_measured.mechanism)}</div>
+        </td>
+        <td style="padding:14px;background:rgba(249, 115, 22, 0.04);">
+          ${cassMetric}
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${esc(row.cassandra_estimated.mechanism)}</div>
+        </td>
+        <td style="padding:14px;background:rgba(139, 92, 246, 0.04);">
+          ${neoMetric}
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${esc(row.neo4j_estimated.mechanism)}</div>
+        </td>
+        <td style="padding:14px;">
+          <span class="badge" style="background:rgba(6, 182, 212, 0.15);color:var(--cyan);border:1px solid var(--cyan);font-weight:700;">${esc(row.winner)}</span>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.4;">${esc(row.summary)}</div>
+        </td>
+      </tr>
+    `;
+  });
+
+  return `
+    <div class="card" style="padding:20px;margin-bottom:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <h3 style="font-size:16px;color:var(--heading);margin:0 0 4px 0;">Empirical Performance Comparison Matrix</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:0;">
+            Strict separation: <strong>[MEASURED]</strong> reflects live WiredTiger B-Tree benchmark runs; <strong>[ESTIMATED]</strong> reflects architectural distributed cost models.
+          </p>
+        </div>
+        <span class="badge" style="background:rgba(16, 185, 129, 0.15);color:var(--green);border:1px solid var(--green);">
+          ${esc(benchData.telemetry_source || 'MEASURED LIVE')}
+        </span>
+      </div>
+
+      <div class="table-container" style="overflow-x:auto;">
+        <table class="table" style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border-card);text-align:left;">
+              <th style="padding:12px;color:var(--text-muted);font-weight:600;">Query Access Pattern</th>
+              <th style="padding:12px;color:var(--green);font-weight:700;">MongoDB 7.0<br><span style="font-size:10px;font-weight:normal;color:var(--text-muted);">[MEASURED LIVE]</span></th>
+              <th style="padding:12px;color:var(--orange);font-weight:700;">Apache Cassandra<br><span style="font-size:10px;font-weight:normal;color:var(--text-muted);">[ESTIMATED]</span></th>
+              <th style="padding:12px;color:var(--purple);font-weight:700;">Neo4j Graph<br><span style="font-size:10px;font-weight:normal;color:var(--text-muted);">[ESTIMATED]</span></th>
+              <th style="padding:12px;color:var(--cyan);font-weight:700;">Winning Architecture</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Core Takeaways Cards -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:16px;">
+      <div class="card" style="padding:18px;">
+        <h4 style="color:var(--green);font-size:14px;margin:0 0 8px 0;display:flex;align-items:center;gap:6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          MongoDB: The Operational Engine
+        </h4>
+        <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0;">
+          Delivers consistent single-digit millisecond response across user point lookups (1.92 ms), ad-hoc risk score filtering (5.67 ms), and multi-stage category aggregation pipelines (31.02 ms). Ideal for stateful screening and rule evaluation.
+        </p>
+      </div>
+
+      <div class="card" style="padding:18px;">
+        <h4 style="color:var(--orange);font-size:14px;margin:0 0 8px 0;display:flex;align-items:center;gap:6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Cassandra: The High-Velocity Ledger
+        </h4>
+        <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0;">
+          LSM-Tree write buffering yields unrivaled write ingestion (>25,000 ops/s). However, lack of secondary range scans across partition tokens forces heavy denormalization and makes multi-partition analytics unviable without Spark.
+        </p>
+      </div>
+
+      <div class="card" style="padding:18px;">
+        <h4 style="color:var(--purple);font-size:14px;margin:0 0 8px 0;display:flex;align-items:center;gap:6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Neo4j: The Syndicate Fraud Detector
+        </h4>
+        <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0;">
+          Index-Free Adjacency traverses shared devices and multi-hop account rings in 1.8 ms (vs 62.8 ms in MongoDB $lookup). While unmatched for entity graphs, transactional pointer locks severely limit primary transaction ledger throughput.
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+function renderLab18FraudRingsTab(ringsData) {
+  const rings = ringsData.rings || [];
+  let ringsHtml = '';
+
+  rings.forEach((r, idx) => {
+    const fraudUsers = (r.fraud_users || []).map(u => `<span class="badge" style="background:rgba(239, 68, 68, 0.15);color:var(--red);border:1px solid var(--red);margin:2px;">${esc(u)}</span>`).join('');
+    const connectedUsers = (r.connected_users || []).slice(0, 8).map(u => `<span class="badge" style="background:rgba(255,255,255,0.05);color:var(--text-primary);border:1px solid var(--border-card);margin:2px;">${esc(u)}</span>`).join('');
+    const locs = (r.sample_locations || []).join(', ');
+
+    ringsHtml += `
+      <div class="card" style="padding:16px;margin-bottom:12px;border-left:4px solid var(--purple);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="font-size:15px;font-weight:700;color:var(--heading);display:flex;align-items:center;gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            Compromised Device: <span style="color:var(--purple);font-family:monospace;">${esc(r.device_id)}</span>
+          </div>
+          <span class="badge" style="background:rgba(139, 92, 246, 0.2);color:var(--purple);font-weight:700;">
+            ${r.connected_users_count} Associated Accounts
+          </span>
+        </div>
+        <div style="font-size:12px;margin-bottom:6px;">
+          <strong style="color:var(--red);">Confirmed Fraudulent Users:</strong> ${fraudUsers}
+        </div>
+        <div style="font-size:12px;margin-bottom:6px;">
+          <strong style="color:var(--text-muted);">Associated Accounts on Same Device:</strong> ${connectedUsers} ${r.connected_users_count > 8 ? `<em>+${r.connected_users_count - 8} more</em>` : ''}
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);">
+          Geographic Footprint: <strong>${esc(locs || 'Multiple Cities')}</strong>
+        </div>
+      </div>
+    `;
+  });
+
+  return `
+    <div class="card" style="padding:20px;margin-bottom:20px;">
+      <h3 style="font-size:16px;color:var(--heading);margin:0 0 6px 0;">Query 5: Shared Device Syndicate Fraud Rings</h3>
+      <p style="font-size:12px;color:var(--text-muted);margin:0 0 16px 0;line-height:1.5;">
+        Identified fraud rings where confirmed compromised user accounts share physical hardware devices (<code>device_id</code>) with other active accounts. In MongoDB, this requires multi-stage <code>$lookup</code> joins (~62 ms). In Neo4j, direct RAM pointer dereferencing resolves the entire syndicate subgraph in <strong>1.8 ms</strong>.
+      </p>
+      ${ringsHtml}
+    </div>
+  `;
+}
+
+function renderLab18TransactionsTab() {
+  return `
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div>
+          <h3 style="font-size:16px;color:var(--heading);margin:0 0 4px 0;">Synthetic Transaction Ledger (10,000 Records)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:0;">Calibrated ground-truth fraud rate: ~2.0% with realistic merchant, geo, and device metadata.</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" id="lab18-filter-fraud" onchange="loadLab18Transactions()" checked>
+            <span style="color:var(--red);font-weight:600;">Only Fraudulent (is_fraud=true)</span>
+          </label>
+          <select id="lab18-filter-category" onchange="loadLab18Transactions()" class="input" style="font-size:12px;padding:6px 10px;">
+            <option value="all">All Merchant Categories</option>
+            <option value="Cryptocurrency">Cryptocurrency</option>
+            <option value="Wire Transfer">Wire Transfer</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Retail">Retail</option>
+            <option value="Travel">Travel</option>
+            <option value="Dining">Dining</option>
+            <option value="Digital Goods">Digital Goods</option>
+            <option value="ATM Withdrawal">ATM Withdrawal</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="lab18-transactions-table-container">
+        <div style="text-align:center;padding:30px;color:var(--text-muted);"><div class="spinner" style="margin:0 auto 12px;"></div>Loading transactions...</div>
+      </div>
+    </div>
+  `;
+}
+
+async function loadLab18Transactions() {
+  const container = document.getElementById('lab18-transactions-table-container');
+  if (!container) return;
+
+  const onlyFraud = document.getElementById('lab18-filter-fraud')?.checked ?? true;
+  const category = document.getElementById('lab18-filter-category')?.value ?? 'all';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab18/transactions?only_fraud=${onlyFraud}&category=${encodeURIComponent(category)}&limit=25`);
+    const data = await res.json();
+    const items = data.items || [];
+
+    if (items.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">No transactions matching criteria.</div>';
+      return;
+    }
+
+    let rowsHtml = '';
+    items.forEach(t => {
+      const isFraud = t.is_fraud;
+      const riskColor = t.risk_score >= 80 ? 'var(--red)' : t.risk_score >= 50 ? 'var(--orange)' : 'var(--green)';
+      const statusBadge = isFraud 
+        ? `<span class="badge" style="background:rgba(239, 68, 68, 0.15);color:var(--red);border:1px solid var(--red);font-weight:700;">FRAUD</span>`
+        : `<span class="badge" style="background:rgba(16, 185, 129, 0.15);color:var(--green);border:1px solid var(--green);">LEGIT</span>`;
+
+      rowsHtml += `
+        <tr style="border-bottom:1px solid var(--border-card);">
+          <td style="padding:10px;font-family:monospace;font-weight:600;">${esc(t.transaction_id)}</td>
+          <td style="padding:10px;font-family:monospace;color:var(--cyan);">${esc(t.user_id)}</td>
+          <td style="padding:10px;font-weight:700;color:var(--heading);">$${Number(t.amount).toFixed(2)}</td>
+          <td style="padding:10px;">${esc(t.merchant)} <span style="font-size:11px;color:var(--text-muted);">(${esc(t.category)})</span></td>
+          <td style="padding:10px;font-family:monospace;color:var(--purple);">${esc(t.device_id)}</td>
+          <td style="padding:10px;font-weight:700;color:${riskColor};">${Number(t.risk_score).toFixed(1)}</td>
+          <td style="padding:10px;">${statusBadge}</td>
+          <td style="padding:10px;font-size:11px;color:var(--text-muted);">${esc(t.location?.city || '')}, ${esc(t.location?.country || '')}</td>
+        </tr>
+      `;
+    });
+
+    container.innerHTML = `
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Displaying <strong>${items.length}</strong> of <strong>${data.total}</strong> matching records:</div>
+      <div class="table-container" style="overflow-x:auto;">
+        <table class="table" style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border-card);text-align:left;">
+              <th style="padding:10px;color:var(--text-muted);">Txn ID</th>
+              <th style="padding:10px;color:var(--text-muted);">User ID</th>
+              <th style="padding:10px;color:var(--text-muted);">Amount</th>
+              <th style="padding:10px;color:var(--text-muted);">Merchant / Category</th>
+              <th style="padding:10px;color:var(--text-muted);">Device ID</th>
+              <th style="padding:10px;color:var(--text-muted);">Risk Score</th>
+              <th style="padding:10px;color:var(--text-muted);">Status</th>
+              <th style="padding:10px;color:var(--text-muted);">Location</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div style="color:var(--red);padding:20px;">Failed to load transactions: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderLab18ArchitectureTab(archData) {
+  const poly = archData.polyglot_architecture || {};
+  const dims = archData.dimensions || [];
+
+  let dimRows = '';
+  dims.forEach(d => {
+    dimRows += `
+      <tr style="border-bottom:1px solid var(--border-card);">
+        <td style="padding:12px;font-weight:600;color:var(--heading);">${esc(d.attribute)}</td>
+        <td style="padding:12px;color:var(--green);">${esc(d.mongodb)}</td>
+        <td style="padding:12px;color:var(--orange);">${esc(d.cassandra)}</td>
+        <td style="padding:12px;color:var(--purple);">${esc(d.neo4j)}</td>
+      </tr>
+    `;
+  });
+
+  return `
+    <!-- Polyglot Diagram Card -->
+    <div class="card" style="padding:22px;margin-bottom:24px;border:1px solid rgba(6, 182, 212, 0.3);">
+      <h3 style="font-size:16px;color:var(--heading);margin:0 0 8px 0;display:flex;align-items:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Tri-Tier Polyglot Persistence Architecture (Final Recommendation)
+      </h3>
+      <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px 0;line-height:1.6;">
+        No single database satisfies point queries, ad-hoc rule scoring, high-velocity ingestion, and syndicate graph traversal without unacceptable compromises. Production architectures route workloads to specialized engines:
+      </p>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin-bottom:16px;">
+        <div class="card" style="padding:16px;background:rgba(249, 115, 22, 0.05);border-left:4px solid var(--orange);">
+          <div style="font-size:11px;color:var(--orange);font-weight:700;text-transform:uppercase;">Tier 1: Ingestion Buffer</div>
+          <h4 style="font-size:16px;color:var(--heading);margin:4px 0 8px 0;">${esc(poly.tier1_ingestion?.database || 'Apache Cassandra')}</h4>
+          <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 8px 0;">
+            <strong>Role:</strong> ${esc(poly.tier1_ingestion?.responsibility || '')}
+          </p>
+          <div style="font-size:11px;color:var(--orange);font-weight:600;">
+            ✓ ${esc(poly.tier1_ingestion?.benefit || '')}
+          </div>
+        </div>
+
+        <div class="card" style="padding:16px;background:rgba(16, 185, 129, 0.05);border-left:4px solid var(--green);">
+          <div style="font-size:11px;color:var(--green);font-weight:700;text-transform:uppercase;">Tier 2: Operational Engine</div>
+          <h4 style="font-size:16px;color:var(--heading);margin:4px 0 8px 0;">${esc(poly.tier2_operational?.database || 'MongoDB 7.0')}</h4>
+          <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 8px 0;">
+            <strong>Role:</strong> ${esc(poly.tier2_operational?.responsibility || '')}
+          </p>
+          <div style="font-size:11px;color:var(--green);font-weight:600;">
+            ✓ ${esc(poly.tier2_operational?.benefit || '')}
+          </div>
+        </div>
+
+        <div class="card" style="padding:16px;background:rgba(139, 92, 246, 0.05);border-left:4px solid var(--purple);">
+          <div style="font-size:11px;color:var(--purple);font-weight:700;text-transform:uppercase;">Tier 3: Syndicate Discovery</div>
+          <h4 style="font-size:16px;color:var(--heading);margin:4px 0 8px 0;">${esc(poly.tier3_syndicate?.database || 'Neo4j Graph')}</h4>
+          <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 8px 0;">
+            <strong>Role:</strong> ${esc(poly.tier3_syndicate?.responsibility || '')}
+          </p>
+          <div style="font-size:11px;color:var(--purple);font-weight:600;">
+            ✓ ${esc(poly.tier3_syndicate?.benefit || '')}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Architectural Dimensions Matrix -->
+    <div class="card" style="padding:20px;">
+      <h3 style="font-size:16px;color:var(--heading);margin:0 0 14px 0;">Architectural Dimensions & CAP Tradeoffs</h3>
+      <div class="table-container" style="overflow-x:auto;">
+        <table class="table" style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border-card);text-align:left;">
+              <th style="padding:10px;color:var(--text-muted);">Dimension</th>
+              <th style="padding:10px;color:var(--green);">MongoDB 7.0</th>
+              <th style="padding:10px;color:var(--orange);">Apache Cassandra</th>
+              <th style="padding:10px;color:var(--purple);">Neo4j Graph</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dimRows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+async function runLiveLab18Benchmark() {
+  const btn = document.getElementById('btn-run-bench');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;"></div> Benchmarking...';
+  }
+
+  showToast('Executing live MongoDB capstone benchmark (15 iterations)...');
+
+  try {
+    const res = await fetch(`${API_BASE}/api/labs/lab18/run_benchmark`, { method: 'POST' });
+    if (!res.ok) throw new Error('Benchmark failed');
+    showToast('Live benchmark completed successfully!');
+    await loadLab18();
+  } catch (err) {
+    showToast('Benchmark run failed: ' + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Run Live Benchmark';
+    }
   }
 }

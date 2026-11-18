@@ -50,9 +50,25 @@ app.add_middleware(
 
 db = get_db("cti_platform")
 
-# Mount NoSQL Engineering Labs Router (Labs 8, 9, 10, 12, 13, 14, 15)
+# Mount NoSQL Engineering Labs Router (Labs 8, 9, 10, 12, 13, 14, 15, 16)
 from backend.labs_router import router as labs_router
 app.include_router(labs_router)
+
+# Mount Lab 17 Routes (RAG Pipeline & Vector Index Comparison)
+try:
+    from backend.lab17_routes import router as _lab17_router
+    app.include_router(_lab17_router)
+except Exception as _e:
+    import logging
+    logging.warning(f"Lab 17 routes not loaded: {_e}")
+
+# Mount Lab 18 Routes (Comparative Capstone Benchmark & Polyglot Architecture)
+try:
+    from backend.lab18_routes import router as _lab18_router
+    app.include_router(_lab18_router)
+except Exception as _e:
+    import logging
+    logging.warning(f"Lab 18 routes not loaded: {_e}")
 
 
 def serialize_doc(doc):
