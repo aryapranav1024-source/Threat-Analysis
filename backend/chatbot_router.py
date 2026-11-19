@@ -35,6 +35,7 @@ db = get_db("cti_platform")
 # ---------------------------------------------------------------------------
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
+OLLAMA_HEADERS = {"ngrok-skip-browser-warning": "true", "User-Agent": "ThreatAnalysis-SOC"}
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -49,9 +50,9 @@ SYSTEM_PROMPT = (
 )
 
 def check_ollama_online() -> bool:
-    """Check if local Ollama daemon is reachable."""
+    """Check if local or tunneled Ollama daemon is reachable."""
     try:
-        r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=0.8)
+        r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", headers=OLLAMA_HEADERS, timeout=3.0)
         return r.status_code == 200
     except Exception:
         return False
@@ -59,7 +60,7 @@ def check_ollama_online() -> bool:
 def get_active_ollama_model() -> str:
     """Auto-detect available model in Ollama or use configured model."""
     try:
-        r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=0.8)
+        r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", headers=OLLAMA_HEADERS, timeout=3.0)
         if r.status_code == 200:
             models = [m.get("name") for m in r.json().get("models", [])]
             if not models:
@@ -89,6 +90,7 @@ def call_ollama(prompt: str, context: str, history: list) -> Optional[str]:
     try:
         resp = requests.post(
             f"{OLLAMA_BASE_URL}/api/chat",
+            headers=OLLAMA_HEADERS,
             json={"model": active_model, "messages": messages, "stream": False},
             timeout=90
         )
@@ -726,7 +728,7 @@ async def get_ollama_status():
     models = []
     if online:
         try:
-            r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=1.5)
+            r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", headers=OLLAMA_HEADERS, timeout=3.0)
             models = [m.get("name") for m in r.json().get("models", [])]
         except Exception:
             pass
