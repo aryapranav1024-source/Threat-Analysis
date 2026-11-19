@@ -1201,7 +1201,7 @@
           const el = document.getElementById('ollama-status-badge');
           if (el) {
             if (st.online) {
-              el.innerHTML = `● Ollama: Online (${st.configured_model || 'llama3'})`;
+              el.innerHTML = `● Ollama: Online (${st.active_model || st.configured_model || 'llama3'})`;
               el.style.color = 'var(--green)';
               el.style.borderColor = 'var(--green)';
             } else {

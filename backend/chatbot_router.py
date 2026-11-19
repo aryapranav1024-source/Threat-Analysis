@@ -571,6 +571,7 @@ async def get_ollama_status():
         "online": online,
         "base_url": OLLAMA_BASE_URL,
         "configured_model": OLLAMA_MODEL,
+        "active_model": get_active_ollama_model() if online else None,
         "available_models": models
     }
 
