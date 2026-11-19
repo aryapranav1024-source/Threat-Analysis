@@ -70,6 +70,14 @@ except Exception as _e:
     import logging
     logging.warning(f"Lab 18 routes not loaded: {_e}")
 
+# Mount Threat Intelligence Chatbot & Mitigation Router (Final Assessment / Appendix A)
+try:
+    from backend.chatbot_router import router as _chatbot_router
+    app.include_router(_chatbot_router)
+except Exception as _e:
+    import logging
+    logging.warning(f"Chatbot routes not loaded: {_e}")
+
 
 def serialize_doc(doc):
     """Serialize MongoDB BSON document to JSON-compatible dict."""

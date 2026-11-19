@@ -36,6 +36,7 @@ const TITLES = {
   lab16: 'Lab 16: Polyglot Data Modeling & Hybrid Query Service',
   lab17: 'Lab 17: RAG Pipeline & Vector Indexing (HNSW vs IVF)',
   lab18: 'Lab 18: Comparative Capstone — NoSQL Benchmarking & Polyglot Architecture',
+  chatbot: 'Final Assessment: AI Threat Intel Chatbot & Autonomous Mitigation Bot',
   sources: 'Threat Sources Registry (29 Active Feeds)'
 };
 
@@ -154,6 +155,7 @@ function switchTab(tabName) {
   else if (tabName === 'lab16') loadLab16();
   else if (tabName === 'lab17') loadLab17();
   else if (tabName === 'lab18') loadLab18();
+  else if (tabName === 'chatbot') loadChatbot();
   else if (tabName === 'sources') loadSources();
 }
 
@@ -4050,3 +4052,388 @@ async function runLiveLab18Benchmark() {
     }
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// FINAL ASSESSMENT: AI THREAT INTEL CHATBOT & AUTONOMOUS MITIGATION BOT
+// ══════════════════════════════════════════════════════════════════════════
+
+let chatbotMessages = [
+  {
+    role: 'assistant',
+    text: "🛡️ **Welcome to the Cyber Threat Intelligence Assistant.**\n\nI can analyze **Anticipated**, **Active**, **Evolving**, and **Resolved** threats across **Windows**, **Linux**, **macOS**, **Android**, and **iOS** using MongoDB vector search RAG.\n\nYou can also click **'Run Vulnerability Scan'** below to audit host misconfigurations and apply mitigations with confirmation."
+  }
+];
+let currentChatbotPlatform = 'all';
+let currentChatbotStatus = 'all';
+
+async function loadChatbot() {
+  const container = document.getElementById('chatbot-content');
+  if (!container) return;
+
+  container.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);"><div class="spinner" style="margin:0 auto 16px;"></div>Initializing Threat Intelligence Chatbot & RAG Engine...</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/chatbot/dashboard`);
+    const dash = await res.json();
+    renderChatbotView(dash);
+  } catch (err) {
+    renderChatbotView({ total_threats: 20, by_status: {}, by_platform: {} });
+  }
+}
+
+function renderChatbotView(dash) {
+  const container = document.getElementById('chatbot-content');
+  if (!container) return;
+
+  const total = dash.total_threats || 20;
+  const s = dash.by_status || {};
+  const ant = s.anticipated || 5;
+  const act = s.active || 5;
+  const evo = s.evolving || 5;
+  const res = s.resolved || 5;
+
+  container.innerHTML = `
+    <!-- Top Banner -->
+    <div style="background:linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%);border:1px solid rgba(14, 165, 233, 0.35);border-radius:var(--radius-md);padding:20px;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <span class="badge" style="background:rgba(14, 165, 233, 0.2);color:var(--cyan);border:1px solid var(--cyan);font-weight:700;">FINAL ASSESSMENT</span>
+            <span class="badge" style="background:rgba(16, 185, 129, 0.15);color:var(--green);border:1px solid var(--green);">MongoDB Vector RAG</span>
+            <span class="badge" style="background:rgba(139, 92, 246, 0.15);color:var(--purple);border:1px solid var(--purple);">Autonomous Scanner</span>
+          </div>
+          <h2 style="font-size:20px;color:var(--heading);margin:0 0 6px 0;font-weight:700;">Multi-Platform Threat Intelligence AI & Mitigation Bot</h2>
+          <p style="font-size:13px;color:var(--text-muted);margin:0;max-width:850px;">
+            Synthesis of <strong>Exercises 1 - 18</strong>. Grounded question answering covering Anticipated, Active, Evolving, and Resolved threats across Windows, Linux, macOS, Android, and iOS. Features an autonomous background scanner that audits host misconfigurations and applies mitigations with human-in-the-loop confirmation.
+          </p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="triggerChatbotScan()" style="font-size:12px;padding:8px 14px;background:var(--cyan);color:#000;border:none;font-weight:600;display:flex;align-items:center;gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Run Vulnerability Scan
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Strip -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:12px;margin-top:16px;">
+        <div style="background:rgba(0,0,0,0.25);padding:10px 14px;border-radius:6px;border-left:3px solid var(--cyan);">
+          <div style="font-size:11px;color:var(--text-muted);">Total Threats</div>
+          <div style="font-size:18px;font-weight:700;color:var(--heading);">${total} Indexed</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.25);padding:10px 14px;border-radius:6px;border-left:3px solid var(--orange);">
+          <div style="font-size:11px;color:var(--text-muted);">Anticipated</div>
+          <div style="font-size:18px;font-weight:700;color:var(--orange);">${ant} Threats</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.25);padding:10px 14px;border-left:3px solid var(--red);border-radius:6px;">
+          <div style="font-size:11px;color:var(--text-muted);">Active</div>
+          <div style="font-size:18px;font-weight:700;color:var(--red);">${act} Campaigns</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.25);padding:10px 14px;border-left:3px solid var(--purple);border-radius:6px;">
+          <div style="font-size:11px;color:var(--text-muted);">Evolving</div>
+          <div style="font-size:18px;font-weight:700;color:var(--purple);">${evo} Vectors</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.25);padding:10px 14px;border-left:3px solid var(--green);border-radius:6px;">
+          <div style="font-size:11px;color:var(--text-muted);">Resolved</div>
+          <div style="font-size:18px;font-weight:700;color:var(--green);">${res} Patched</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scan Results Panel (Hidden until scan run) -->
+    <div id="chatbot-scan-panel" style="display:none;margin-bottom:20px;"></div>
+
+    <!-- Main Chat Workspace -->
+    <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;">
+      <!-- Controls & Quick Prompts Sidebar -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card" style="padding:16px;">
+          <h4 style="font-size:13px;color:var(--heading);margin:0 0 12px 0;text-transform:uppercase;letter-spacing:0.5px;">Target Filters</h4>
+          
+          <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Platform Focus</label>
+          <select id="chat-platform-sel" onchange="currentChatbotPlatform=this.value" style="width:100%;padding:8px;background:rgba(0,0,0,0.3);border:1px solid var(--border-card);color:var(--heading);border-radius:4px;font-size:12px;margin-bottom:12px;">
+            <option value="all">🌐 All Platforms</option>
+            <option value="windows">💻 Windows</option>
+            <option value="linux">🐧 Linux</option>
+            <option value="macos">🍎 macOS</option>
+            <option value="android">🤖 Android</option>
+            <option value="ios">📱 iOS</option>
+          </select>
+
+          <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Threat Status Filter</label>
+          <select id="chat-status-sel" onchange="currentChatbotStatus=this.value" style="width:100%;padding:8px;background:rgba(0,0,0,0.3);border:1px solid var(--border-card);color:var(--heading);border-radius:4px;font-size:12px;">
+            <option value="all">All Statuses</option>
+            <option value="anticipated">⚠️ Anticipated</option>
+            <option value="active">🔥 Active</option>
+            <option value="evolving">📈 Evolving</option>
+            <option value="resolved">✅ Resolved</option>
+          </select>
+        </div>
+
+        <div class="card" style="padding:16px;">
+          <h4 style="font-size:13px;color:var(--heading);margin:0 0 12px 0;text-transform:uppercase;letter-spacing:0.5px;">Example Queries</h4>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button onclick="injectChatbotPrompt('What are anticipated zero-day vulnerabilities for Windows, and what are the mitigation steps?')" class="btn" style="text-align:left;font-size:11px;padding:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border-card);color:var(--heading);border-radius:4px;">
+              ⚠️ Anticipated Windows Zero-Day
+            </button>
+            <button onclick="injectChatbotPrompt('Tell me about the active BlackBasta 2.0 ransomware campaign and how to detect it.')" class="btn" style="text-align:left;font-size:11px;padding:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border-card);color:var(--heading);border-radius:4px;">
+              🔥 Active BlackBasta Ransomware
+            </button>
+            <button onclick="injectChatbotPrompt('What is the Linux eBPF sandbox escape vulnerability and how can we mitigate it?')" class="btn" style="text-align:left;font-size:11px;padding:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border-card);color:var(--heading);border-radius:4px;">
+              🐧 Linux eBPF Sandbox Escape
+            </button>
+            <button onclick="injectChatbotPrompt('Explain the resolved Linux Dirty Pipe (CVE-2022-0847) exploit and verification commands.')" class="btn" style="text-align:left;font-size:11px;padding:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border-card);color:var(--heading);border-radius:4px;">
+              ✅ Resolved Dirty Pipe Exploit
+            </button>
+            <button onclick="injectChatbotPrompt('What evolving threats exist for Android and iOS devices, and how can we mitigate them?')" class="btn" style="text-align:left;font-size:11px;padding:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border-card);color:var(--heading);border-radius:4px;">
+              📱 Mobile Evolving Threats
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Stream Container -->
+      <div class="card" style="display:flex;flex-direction:column;height:650px;padding:0;overflow:hidden;">
+        <!-- Header -->
+        <div style="padding:12px 18px;border-bottom:1px solid var(--border-card);display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.15);">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="status-dot" style="background:var(--green);"></div>
+            <span style="font-size:12px;font-weight:600;color:var(--heading);">Threat Intelligence RAG Session</span>
+          </div>
+          <button onclick="clearChatbotHistory()" class="btn" style="font-size:11px;padding:4px 8px;background:transparent;border:1px solid var(--border-card);color:var(--text-muted);">
+            Clear History
+          </button>
+        </div>
+
+        <!-- Messages Area -->
+        <div id="chat-messages-box" style="flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px;">
+          ${renderChatbotMessagesHtml()}
+        </div>
+
+        <!-- Input Area -->
+        <div style="padding:14px;border-top:1px solid var(--border-card);background:rgba(0,0,0,0.2);display:flex;gap:10px;">
+          <input type="text" id="chatbot-user-input" onkeydown="if(event.key==='Enter')sendChatbotMessage()" placeholder="Ask about threats (e.g. 'How to mitigate BlackBasta on Windows?' or 'scan and fix')..." style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.4);border:1px solid var(--border-card);border-radius:4px;color:var(--heading);font-size:13px;outline:none;" />
+          <button id="chatbot-send-btn" onclick="sendChatbotMessage()" class="btn btn-primary" style="padding:10px 20px;font-size:13px;font-weight:600;background:var(--cyan);color:#000;border:none;">
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Scroll to bottom
+  const box = document.getElementById('chat-messages-box');
+  if (box) box.scrollTop = box.scrollHeight;
+}
+
+function renderChatbotMessagesHtml() {
+  return chatbotMessages.map(m => {
+    const isUser = m.role === 'user';
+    const bg = isUser ? 'rgba(14, 165, 233, 0.15)' : 'rgba(255, 255, 255, 0.04)';
+    const border = isUser ? '1px solid rgba(14, 165, 233, 0.4)' : '1px solid var(--border-card)';
+    const align = isUser ? 'flex-end' : 'flex-start';
+    const label = isUser ? '👤 You' : '🛡️ Threat Intel AI';
+
+    let sourcesHtml = '';
+    if (m.sources && m.sources.length) {
+      sourcesHtml = `
+        <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border-card);">
+          <div style="font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:6px;">📚 Retrieved Context Sources (${m.sources.length} chunks)</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${m.sources.map(s => `
+              <div style="background:rgba(0,0,0,0.25);padding:6px 10px;border-radius:4px;font-size:11px;">
+                <span style="color:var(--heading);font-weight:600;">${esc(s.title)}</span>
+                <span class="badge" style="font-size:9px;padding:2px 5px;margin-left:6px;background:rgba(255,255,255,0.06);">${s.platform?.toUpperCase()}</span>
+                <span class="badge" style="font-size:9px;padding:2px 5px;margin-left:4px;color:var(--orange);">${s.status?.toUpperCase()}</span>
+                <span style="color:var(--text-muted);font-family:var(--font-mono);margin-left:6px;">(Score: ${s.score})</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div style="display:flex;flex-direction:column;align-items:${align};max-width:85%;align-self:${align};">
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;padding:0 4px;">${label}</div>
+        <div style="background:${bg};border:${border};border-radius:8px;padding:12px 16px;color:var(--text-primary);font-size:13px;line-height:1.5;">
+          ${renderMarkdownText(m.text)}
+          ${sourcesHtml}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderMarkdownText(txt) {
+  if (!txt) return '';
+  let h = esc(txt);
+  // Headers
+  h = h.replace(/### (.*?)\n/g, '<h4 style="font-size:14px;color:var(--heading);margin:8px 0 4px 0;">$1</h4>');
+  h = h.replace(/#### (.*?)\n/g, '<h5 style="font-size:12px;color:var(--cyan);margin:8px 0 4px 0;text-transform:uppercase;">$1</h5>');
+  // Bold
+  h = h.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // Inline code
+  h = h.replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.3);padding:2px 4px;border-radius:3px;font-family:var(--font-mono);font-size:12px;color:var(--cyan);">$1</code>');
+  // Line breaks
+  h = h.replace(/\n/g, '<br/>');
+  return h;
+}
+
+function injectChatbotPrompt(p) {
+  const inp = document.getElementById('chatbot-user-input');
+  if (inp) {
+    inp.value = p;
+    sendChatbotMessage();
+  }
+}
+
+async function sendChatbotMessage() {
+  const inp = document.getElementById('chatbot-user-input');
+  if (!inp) return;
+  const prompt = inp.value.trim();
+  if (!prompt) return;
+
+  inp.value = '';
+  chatbotMessages.push({ role: 'user', text: prompt });
+
+  const box = document.getElementById('chat-messages-box');
+  if (box) {
+    box.innerHTML = renderChatbotMessagesHtml() + `
+      <div id="chat-thinking-indicator" style="display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:12px;padding:8px;">
+        <div class="spinner" style="width:14px;height:14px;"></div>
+        Analyzing threat vectors & retrieving mitigations...
+      </div>
+    `;
+    box.scrollTop = box.scrollHeight;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/chatbot/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: 'web-session',
+        message: prompt,
+        platform: currentChatbotPlatform,
+        status_filter: currentChatbotStatus,
+        top_k: 4
+      })
+    });
+    const data = await res.json();
+    chatbotMessages.push({
+      role: 'assistant',
+      text: data.response,
+      sources: data.sources
+    });
+  } catch (err) {
+    chatbotMessages.push({
+      role: 'assistant',
+      text: `❌ Error querying Threat Intelligence engine: ${err.message}`
+    });
+  }
+
+  if (box) {
+    box.innerHTML = renderChatbotMessagesHtml();
+    box.scrollTop = box.scrollHeight;
+  }
+}
+
+function clearChatbotHistory() {
+  chatbotMessages = [
+    {
+      role: 'assistant',
+      text: "🛡️ Session reset. Ready to query Anticipated, Active, Evolving, or Resolved threats."
+    }
+  ];
+  const box = document.getElementById('chat-messages-box');
+  if (box) box.innerHTML = renderChatbotMessagesHtml();
+}
+
+async function triggerChatbotScan() {
+  const panel = document.getElementById('chatbot-scan-panel');
+  if (!panel) return;
+
+  panel.style.display = 'block';
+  panel.innerHTML = `
+    <div class="card" style="padding:16px;border-left:4px solid var(--cyan);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="spinner" style="width:16px;height:16px;"></div>
+        <span style="font-size:13px;color:var(--heading);font-weight:600;">Auditing local security baselines, firewall profiles, and active ports...</span>
+      </div>
+    </div>
+  `;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/chatbot/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scan_type: 'quick', platform: currentChatbotPlatform === 'all' ? null : currentChatbotPlatform })
+    });
+    const data = await res.json();
+    const findings = data.findings || [];
+
+    let findingsHtml = '';
+    findings.forEach(f => {
+      const isCrit = f.severity === 'Critical' || f.severity === 'High';
+      const borderCol = f.severity === 'Critical' ? 'var(--red)' : f.severity === 'High' ? 'var(--orange)' : 'var(--blue)';
+
+      findingsHtml += `
+        <div style="border-left:4px solid ${borderCol};background:rgba(0,0,0,0.3);padding:12px;border-radius:4px;margin-top:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-weight:700;color:var(--heading);font-size:13px;">${esc(f.title)} <span class="badge" style="font-size:10px;margin-left:6px;background:${borderCol};color:#fff;">${f.severity}</span></div>
+            <div style="font-size:11px;color:var(--text-muted);margin:3px 0;"><strong>ID:</strong> <code>${esc(f.id)}</code> | ${esc(f.description)}</div>
+            <div style="font-size:11px;color:var(--cyan);"><strong>Fix:</strong> <code>${esc(f.remediation)}</code></div>
+          </div>
+          ${isCrit ? `
+            <div style="display:flex;gap:6px;">
+              <button onclick="confirmChatbotMitigation('${esc(f.id)}', false)" class="btn btn-primary" style="font-size:11px;padding:6px 12px;background:var(--green);color:#000;border:none;font-weight:700;">
+                ⚡ Apply Fix
+              </button>
+              <button onclick="confirmChatbotMitigation('${esc(f.id)}', true)" class="btn" style="font-size:11px;padding:6px 10px;background:rgba(255,255,255,0.06);border:1px solid var(--border-card);color:var(--text-primary);">
+                Simulate Dry-Run
+              </button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    });
+
+    panel.innerHTML = `
+      <div class="card" style="padding:18px;border:1px solid var(--cyan);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h3 style="font-size:15px;color:var(--heading);margin:0;font-weight:700;">
+            🛡️ Vulnerability Audit Results: ${esc(data.platform?.toUpperCase())} (${data.timestamp?.slice(0,19)})
+          </h3>
+          <button onclick="document.getElementById('chatbot-scan-panel').style.display='none'" class="btn" style="font-size:10px;padding:2px 6px;">✕ Close</button>
+        </div>
+        <div>${findingsHtml}</div>
+      </div>
+    `;
+  } catch (err) {
+    panel.innerHTML = `<div class="card" style="padding:14px;border-color:var(--red);color:var(--red);">Scan failed: ${esc(err.message)}</div>`;
+  }
+}
+
+async function confirmChatbotMitigation(findingId, dryRun) {
+  showToast(dryRun ? `Simulating dry-run for ${findingId}...` : `Applying mitigation for ${findingId}...`);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/chatbot/mitigate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        finding_id: findingId,
+        target_platform: currentChatbotPlatform === 'all' ? 'windows' : currentChatbotPlatform,
+        confirmed: true,
+        dry_run: dryRun
+      })
+    });
+    const d = await res.json();
+    alert(`✅ ${d.message}\n\nAction: ${d.action_taken}`);
+    showToast(d.message);
+  } catch (err) {
+    alert(`Mitigation failed: ${err.message}`);
+  }
+}
+
