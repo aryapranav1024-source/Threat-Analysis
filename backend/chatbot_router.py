@@ -87,7 +87,7 @@ def call_ollama(prompt: str, context: str, history: list) -> Optional[str]:
         resp = requests.post(
             f"{OLLAMA_BASE_URL}/api/chat",
             json={"model": active_model, "messages": messages, "stream": False},
-            timeout=60
+            timeout=180
         )
         if resp.status_code == 200:
             return resp.json()["message"]["content"]
@@ -621,7 +621,7 @@ async def chat_interaction(req: ChatMessageRequest):
     
     if ollama_response:
         response_text = ollama_response
-        llm_engine = f"Ollama ({OLLAMA_MODEL})"
+        llm_engine = f"Ollama ({get_active_ollama_model()})"
     elif top_matches:
         best_doc = top_matches[0][1]
         response_text = (
