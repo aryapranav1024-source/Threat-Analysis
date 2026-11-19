@@ -637,7 +637,7 @@ async def chat_interaction(req: ChatMessageRequest):
             f"2. Apply official vendor patches and harden baseline configurations.\n"
             f"3. Run an automated platform audit using the **Active Vulnerability Scanner** tab."
         )
-        llm_engine = "Grounded Threat Analysis RAG (Ollama offline fallback)"
+        llm_engine = "Ollama Chatbot (Offline Knowledge Base Fallback)"
     else:
         response_text = (
             f"No specific threat documents matched your query filters (`Platform: {req.platform}`, `Status: {req.status_filter}`). "

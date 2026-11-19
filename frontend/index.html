@@ -253,8 +253,8 @@
               <path d="M8 9h8M8 13h5"/>
             </svg>
           </div>
-          <span class="nav-tab-label">AI Threat Chatbot</span>
-          <span class="nav-tab-badge" style="color:var(--cyan);background:rgba(0,240,255,0.15)">RAG/SLM</span>
+          <span class="nav-tab-label">Ollama Chatbot</span>
+          <span class="nav-tab-badge" style="color:var(--cyan);background:rgba(0,240,255,0.15)">OLLAMA</span>
         </button>
 
         <button class="nav-tab" data-tab="sources" onclick="switchTab('sources')">
@@ -885,7 +885,7 @@
               <div style="padding:12px 18px;border-bottom:1px solid var(--border-card);display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.15);">
                 <div style="display:flex;align-items:center;gap:8px;">
                   <div class="status-dot" style="background:var(--green);"></div>
-                  <span style="font-size:12px;font-weight:600;color:var(--heading);">Threat Intelligence RAG Session</span>
+                  <span style="font-size:12px;font-weight:600;color:var(--heading);">Ollama Chatbot Session</span>
                   <span id="ollama-status-badge" class="badge" style="font-size:10px;padding:2px 6px;background:rgba(255,255,255,0.06);border:1px solid var(--border-card);color:var(--cyan);">Ollama SLM Ready</span>
                 </div>
                 <button onclick="clearChatbotHistory()" class="btn" style="font-size:11px;padding:4px 8px;background:transparent;border:1px solid var(--border-card);color:var(--text-muted);cursor:pointer;">
@@ -1226,6 +1226,6 @@
     });
   </script>
 
-  <script src="/static/js/app.js?v=3.6"></script>
+  <script src="/static/js/app.js?v=3.7"></script>
 </body>
 </html>

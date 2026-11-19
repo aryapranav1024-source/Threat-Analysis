@@ -36,7 +36,7 @@ const TITLES = {
   lab16: 'Lab 16: Polyglot Data Modeling & Hybrid Query Service',
   lab17: 'Lab 17: RAG Pipeline & Vector Indexing (HNSW vs IVF)',
   lab18: 'Lab 18: Comparative Capstone — NoSQL Benchmarking & Polyglot Architecture',
-  chatbot: 'Final Assessment: AI Threat Intel Chatbot & Autonomous Mitigation Bot',
+  chatbot: 'Final Assessment: Ollama Chatbot & Autonomous Mitigation Bot',
   sources: 'Threat Sources Registry (29 Active Feeds)'
 };
 
@@ -4193,7 +4193,7 @@ function renderChatbotView(dash) {
         <div style="padding:12px 18px;border-bottom:1px solid var(--border-card);display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.15);">
           <div style="display:flex;align-items:center;gap:8px;">
             <div class="status-dot" style="background:var(--green);"></div>
-            <span style="font-size:12px;font-weight:600;color:var(--heading);">Threat Intelligence RAG Session</span>
+            <span style="font-size:12px;font-weight:600;color:var(--heading);">Ollama Chatbot Session</span>
           </div>
           <button onclick="clearChatbotHistory()" class="btn" style="font-size:11px;padding:4px 8px;background:transparent;border:1px solid var(--border-card);color:var(--text-muted);">
             Clear History
