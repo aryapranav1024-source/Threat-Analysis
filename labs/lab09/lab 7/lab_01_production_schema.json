@@ -1,0 +1,45 @@
+{
+  "schema_analysis": {
+    "origin": "https://ctidigest.com/",
+    "counts": {
+      "sources": 29,
+      "threat_articles": 150,
+      "indicators_of_compromise": 13
+    },
+    "bson_size_metrics": {
+      "sources": {
+        "count": 29,
+        "min_size_bytes": 328,
+        "avg_size_bytes": 348.28,
+        "max_size_bytes": 394,
+        "pct_of_16mb": 0.002348
+      },
+      "threat_articles": {
+        "count": 150,
+        "min_size_bytes": 718,
+        "avg_size_bytes": 801.37,
+        "max_size_bytes": 1222,
+        "pct_of_16mb": 0.007284
+      },
+      "indicators_of_compromise": {
+        "count": 13,
+        "min_size_bytes": 450,
+        "avg_size_bytes": 496.23,
+        "max_size_bytes": 609,
+        "pct_of_16mb": 0.00363
+      },
+      "threat_articles_embedded": {
+        "count": 150,
+        "min_size_bytes": 890,
+        "avg_size_bytes": 993.69,
+        "max_size_bytes": 1698,
+        "pct_of_16mb": 0.010121
+      }
+    },
+    "limit_verification": {
+      "max_measured_bytes": 1698,
+      "limit_16mb_bytes": 16777216,
+      "status": "PASS - No documents approach 16MB limit"
+    }
+  }
+}

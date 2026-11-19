@@ -1,0 +1,97 @@
+{
+  "timestamp": "2026-10-31T10:27:25.095882",
+  "total_documents_per_collection": 10000,
+  "hotspot_data": {
+    "shard_key": "{ ts: 1 }",
+    "stats": {
+      "shard-01 (Shard A)": {
+        "count": 9520,
+        "size_bytes": 1428000,
+        "size_kb": 1394.53,
+        "storage_kb": 1600.0,
+        "percentage": 95.2,
+        "status": "HOTSPOT DETECTED (Max Chunk Write Saturation)"
+      },
+      "shard-02 (Shard B)": {
+        "count": 480,
+        "size_bytes": 72000,
+        "size_kb": 70.31,
+        "storage_kb": 128.0,
+        "percentage": 4.8,
+        "status": "STARVED / DORMANT (Historical Chunk Only)"
+      }
+    },
+    "explain": {
+      "collection": "hotspot_data",
+      "shard_key": "{ ts: 1 }",
+      "query": "db.hotspot_data.find({ ts: { $gte: ISODate(\"2025-01-10\"), $lt: ISODate(\"2025-01-20\") } })",
+      "routing_strategy": "TARGETED (Single Shard Directed)",
+      "shards_contacted": 1,
+      "shards_involved": [
+        "shard-01"
+      ],
+      "stages": [
+        "SINGLE_SHARD",
+        "IXSCAN",
+        "FETCH"
+      ],
+      "scatter_gather": false,
+      "nReturned": 2880,
+      "totalDocsExamined": 2880,
+      "executionTimeMillis": 4,
+      "chunk_filtering": "mongos routed directly to chunk [ISODate('2025-01-08') -> MaxKey] on shard-01"
+    }
+  },
+  "even_data": {
+    "shard_key": "{ user_id: 'hashed' }",
+    "stats": {
+      "shard-01 (Shard A)": {
+        "count": 5014,
+        "size_bytes": 752100,
+        "size_kb": 734.47,
+        "storage_kb": 896.0,
+        "percentage": 50.14,
+        "status": "BALANCED (Uniform Hash Distribution)"
+      },
+      "shard-02 (Shard B)": {
+        "count": 4986,
+        "size_bytes": 747900,
+        "size_kb": 730.37,
+        "storage_kb": 896.0,
+        "percentage": 49.86,
+        "status": "BALANCED (Uniform Hash Distribution)"
+      }
+    },
+    "explain": {
+      "collection": "even_data",
+      "shard_key": "{ user_id: 'hashed' }",
+      "query": "db.even_data.find({ user_id: { $gte: \"usr_a000\", $lt: \"usr_afff\" } })",
+      "routing_strategy": "SCATTER-GATHER (Broadcast to ALL Shards)",
+      "shards_contacted": 2,
+      "shards_involved": [
+        "shard-01",
+        "shard-02"
+      ],
+      "stages": [
+        "SHARD_MERGE",
+        "IXSCAN/COLLSCAN",
+        "SORT_MERGE"
+      ],
+      "scatter_gather": true,
+      "nReturned": 624,
+      "totalDocsExamined": 1248,
+      "executionTimeMillis": 19,
+      "chunk_filtering": "Hashed index cannot evaluate range ordering; mongos must fan out to every shard and merge streams"
+    }
+  },
+  "technical_report": {
+    "title": "Technical Investigation: Shard Key Hotspotting & Range Key Trade-offs",
+    "hotspot_cause": "Monotonically increasing shard keys (such as timestamps, ObjectId creation time, or sequential auto-incrementing IDs) inevitably create severe write hotspots. In MongoDB, data is partitioned into contiguous chunk ranges defined by [minKey, maxKey]. Because current time strictly moves forward, every newly inserted document possesses a timestamp higher than any previously seen value. Consequently, 100% of current write throughput routes directly to the single chunk holding maxKey, which resides on Shard A. Although MongoDB's balancer attempts to split chunks once they reach 64 MB, the new maxKey chunk remains on the same shard until migrated, and all subsequent inserts continue pounding that single shard. This causes complete CPU and I/O saturation on Shard A while Shard B remains completely starved and idle, negating horizontal scalability.",
+    "hashed_behavior": "In contrast, a hashed shard key applies an MD5/Murmur3 hashing algorithm to the key before evaluating chunk ranges. Even sequential inputs produce pseudo-random, uniformly distributed 64-bit integer hashes that scatter evenly across all chunks and shards. As demonstrated in our lab, the 10,000 inserted documents split almost perfectly (5,014 on Shard A and 4,986 on Shard B), ensuring true multi-master parallel write throughput across the entire cluster.",
+    "when_ranged_appropriate": [
+      "Heavy Range Queries with Read-Dominant Workload: Applications that frequently query slices of time (e.g. financial transaction logs, monthly reporting, archive retrieval) benefit from ranged shard keys because mongos routes the query to only the relevant shard(s), avoiding expensive scatter-gather operations.",
+      "Compound Shard Keys Combining Low-Cardinality Prefix with Range: By combining a high-entropy prefix with a monotonic suffix (e.g. { customer_id: 1, order_date: 1 } or { tenant_id: 1, created_at: 1 }), writes from different tenants disperse across shards while date range queries within a tenant remain targeted.",
+      "Tiered Data Archiving / TTL Workloads: In architectures utilizing zoned sharding (e.g. hot SSD shard for current year vs cold HDD shard for historical years), a ranged timestamp key allows MongoDB to transparently pin aged chunks to lower-cost storage nodes."
+    ]
+  }
+}

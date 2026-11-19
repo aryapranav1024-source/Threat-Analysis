@@ -1,0 +1,120 @@
+[
+  {
+    "_id": {
+      "$oid": "6a9e88f96de809aa5829b3be"
+    },
+    "title": "Introduction to Machine Learning",
+    "code": "AIML101",
+    "instructor": "Dr. Priya Sharma",
+    "credits": 4,
+    "schedule": {
+      "days": [
+        "Monday",
+        "Wednesday"
+      ],
+      "time": "10:00-11:30",
+      "room": "LH-201"
+    },
+    "enrolled_students": [
+      {
+        "student_id": "STU1001",
+        "name": "Arjun Mehta",
+        "grade": "A"
+      },
+      {
+        "student_id": "STU1002",
+        "name": "Sneha Reddy",
+        "grade": "B+"
+      },
+      {
+        "student_id": "STU1003",
+        "name": "Rahul Kumar",
+        "grade": "A-"
+      },
+      {
+        "student_id": "STU1004",
+        "name": "Divya Patel",
+        "grade": "B"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6a9e88f96de809aa5829b3bf"
+    },
+    "title": "Deep Learning with PyTorch",
+    "code": "AIML301",
+    "instructor": "Dr. Anil Gupta",
+    "credits": 3,
+    "schedule": {
+      "days": [
+        "Tuesday",
+        "Thursday"
+      ],
+      "time": "14:00-15:30",
+      "room": "LH-305"
+    },
+    "enrolled_students": [
+      {
+        "student_id": "STU1001",
+        "name": "Arjun Mehta",
+        "grade": null
+      },
+      {
+        "student_id": "STU1005",
+        "name": "Kavya Nair",
+        "grade": "A"
+      },
+      {
+        "student_id": "STU1006",
+        "name": "Vikram Singh",
+        "grade": "A+"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6a9e88f96de809aa5829b3c0"
+    },
+    "title": "Natural Language Processing",
+    "code": "AIML201",
+    "instructor": "Dr. Priya Sharma",
+    "credits": 3,
+    "schedule": {
+      "days": [
+        "Monday",
+        "Wednesday",
+        "Friday"
+      ],
+      "time": "09:00-10:00",
+      "room": "LH-102"
+    },
+    "enrolled_students": [
+      {
+        "student_id": "STU1002",
+        "name": "Sneha Reddy",
+        "grade": "B+"
+      },
+      {
+        "student_id": "STU1003",
+        "name": "Rahul Kumar",
+        "grade": null
+      },
+      {
+        "student_id": "STU1007",
+        "name": "Priya Das",
+        "grade": "A-"
+      },
+      {
+        "student_id": "STU1001",
+        "name": "Arjun Mehta",
+        "grade": null
+      },
+      {
+        "student_id": "STU1008",
+        "name": "Neha Gupta",
+        "grade": "B"
+      }
+    ]
+  }
+]

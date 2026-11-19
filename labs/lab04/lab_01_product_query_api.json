@@ -1,0 +1,177 @@
+[
+  {
+    "_id": {
+      "$oid": "6aa1584d0d0145004e619867"
+    },
+    "sku": "PROD-001",
+    "name": "Wireless Noise-Cancelling Headphones",
+    "category": "Audio",
+    "price": 149.99,
+    "stock": 25,
+    "tags": [
+      "electronics",
+      "wireless",
+      "audio",
+      "premium"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aa1584d0d0145004e619868"
+    },
+    "sku": "PROD-002",
+    "name": "Wireless Ergonomic Mouse",
+    "category": "Peripherals",
+    "price": 29.99,
+    "stock": 40,
+    "tags": [
+      "electronics",
+      "wireless",
+      "accessories"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aa1584d0d0145004e619869"
+    },
+    "sku": "PROD-003",
+    "name": "Mechanical Gaming Keyboard",
+    "category": "Peripherals",
+    "price": 89.99,
+    "stock": 15,
+    "tags": [
+      "electronics",
+      "gaming"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aa1584d0d0145004e61986a"
+    },
+    "sku": "PROD-004",
+    "name": "Budget Wired Earphones",
+    "category": "Audio",
+    "price": 24.5,
+    "stock": 0,
+    "tags": [
+      "electronics",
+      "audio"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aa1584d0d0145004e61986b"
+    },
+    "sku": "PROD-005",
+    "name": "Ultra-Wide 34-Inch Monitor",
+    "category": "Displays",
+    "price": 499.99,
+    "stock": 8,
+    "tags": [
+      "electronics",
+      "display",
+      "premium"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aa1584d0d0145004e61986c"
+    },
+    "sku": "PROD-006",
+    "name": "USB-C Fast Charging Cable",
+    "category": "Cables",
+    "price": 12.99,
+    "stock": 120,
+    "tags": [
+      "accessories",
+      "cables"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aa1584d0d0145004e61986d"
+    },
+    "sku": "PROD-007",
+    "name": "Smart Fitness Watch",
+    "category": "Wearables",
+    "price": 199.99,
+    "stock": 0,
+    "tags": [
+      "electronics",
+      "wireless",
+      "fitness",
+      "wearable"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aa1584d0d0145004e61986e"
+    },
+    "sku": "PROD-008",
+    "name": "Desk Laptop Stand",
+    "category": "Office",
+    "price": 34.99,
+    "stock": 60,
+    "tags": [
+      "office",
+      "accessories"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aa1584d0d0145004e61986f"
+    },
+    "sku": "PROD-009",
+    "name": "Studio Condenser Microphone",
+    "category": "Audio",
+    "price": 119.0,
+    "stock": 10,
+    "tags": [
+      "audio",
+      "studio",
+      "premium"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aa1584d0d0145004e619870"
+    },
+    "sku": "PROD-010",
+    "name": "Compact Bluetooth Speaker",
+    "category": "Audio",
+    "price": 45.0,
+    "stock": 0,
+    "tags": [
+      "electronics",
+      "wireless"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aa1584d0d0145004e619871"
+    },
+    "sku": "PROD-011",
+    "name": "RGB Extended Gaming Mousepad",
+    "category": "Accessories",
+    "price": 22.0,
+    "stock": 75,
+    "tags": [
+      "gaming",
+      "accessories"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aa1584d0d0145004e619872"
+    },
+    "sku": "PROD-012",
+    "name": "Leather Laptop Sleeve",
+    "category": "Accessories",
+    "price": 39.99,
+    "stock": 30,
+    "tags": [
+      "accessories",
+      "premium"
+    ]
+  }
+]

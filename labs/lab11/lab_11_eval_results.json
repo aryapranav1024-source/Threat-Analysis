@@ -1,0 +1,105 @@
+{
+  "candidates": [
+    {
+      "name": "order_id",
+      "key_pattern": "{ order_id: 1 }",
+      "cardinality": "High (1:1 with Orders)",
+      "distribution": "Even (Uniform UUID/Auto-inc spread across chunks)",
+      "query_targeting": "Poor for Customer Queries (Broadcast/Scatter-Gather)",
+      "monotonic": false,
+      "verdict": "NOT RECOMMENDED: High cardinality & even spread, but customer dashboard queries broadcast to ALL shards.",
+      "details": {
+        "cardinality": "High - Every order has a distinct ID.",
+        "distribution": "Even - Random order UUIDs split evenly across chunks.",
+        "query_targeting": "Scatter-Gather - Queries by customer_id must fan out to every shard.",
+        "monotonic": "No (when UUID/random). Yes if auto-incrementing integer sequence.",
+        "write_performance": "High write distribution across shards.",
+        "read_performance": "Poor for user-scoped reads; excellent only for single-order lookups."
+      }
+    },
+    {
+      "name": "customer_id",
+      "key_pattern": "{ customer_id: 1 }",
+      "cardinality": "High (10M+ Users)",
+      "distribution": "Uneven (Power Users & Wholesalers create jumbo chunks)",
+      "query_targeting": "Excellent for Customer Queries (Targeted Single Shard)",
+      "monotonic": false,
+      "verdict": "ACCEPTABLE BUT RISKY: Excellent query targeting, but heavy buyers cause uneven shard size and jumbo chunk hotspots.",
+      "details": {
+        "cardinality": "High - Millions of unique customer records.",
+        "distribution": "Uneven - Pareto distribution (80/20 rule): active buyers place 100x more orders.",
+        "query_targeting": "Targeted - All orders for a given customer reside on one shard.",
+        "monotonic": "No.",
+        "write_performance": "Moderate - High-volume buyers route consecutive writes to a single shard.",
+        "read_performance": "Optimal for customer history; risky for storage balance."
+      }
+    },
+    {
+      "name": "order_date",
+      "key_pattern": "{ order_date: 1 }",
+      "cardinality": "Moderate to High (Timestamp precision)",
+      "distribution": "Extreme Hotspot (Monotonically Increasing)",
+      "query_targeting": "Good for Range Queries, Poor for Point Lookups",
+      "monotonic": true,
+      "verdict": "AVOID: Monotonically increasing values route 100% of current writes to the latest max-range shard (Write Hotspot).",
+      "details": {
+        "cardinality": "Moderate to High - Second/millisecond timestamp cardinality.",
+        "distribution": "Severe Imbalance - All current inserts hit the single shard owning the max chunk ($maxKey).",
+        "query_targeting": "Targeted for date ranges (e.g. quarterly reporting), scatter-gather for user queries.",
+        "monotonic": "Yes - Time strictly advances, preventing write scale-out.",
+        "write_performance": "Extremely Bottlenecked - Negates the primary benefit of sharding.",
+        "read_performance": "Efficient for date range scans; terrible for concurrency."
+      }
+    },
+    {
+      "name": "hashed customer_id",
+      "key_pattern": "{ customer_id: 'hashed' }",
+      "cardinality": "High (MD5 Hash Space 2^64)",
+      "distribution": "Even (Cryptographically pseudo-random distribution)",
+      "query_targeting": "Excellent for Targeted Lookups by Customer",
+      "monotonic": false,
+      "verdict": "BEST CHOICE (RECOMMENDED): Combines uniform write distribution with single-shard targeted customer queries.",
+      "details": {
+        "cardinality": "High - Preserves customer cardinality hashed over 64-bit space.",
+        "distribution": "Even - Hash pseudo-randomness guarantees near 50/50 split across 2 shards.",
+        "query_targeting": "Targeted - mongos hashes customer_id and routes directly to the owning shard.",
+        "monotonic": "No - Sequential IDs hash to non-contiguous points.",
+        "write_performance": "Optimal - Uniformly distributed across all shards in cluster.",
+        "read_performance": "Optimal for customer dashboard and order history queries."
+      }
+    }
+  ],
+  "resharding": {
+    "title": "MongoDB 5.0+ Resharding Architecture (Activity 11.1)",
+    "command": "sh.reshardCollection(\"ecommerce.orders\", { customer_id: \"hashed\" })",
+    "steps": [
+      {
+        "phase": "1. Initialization & Pre-Flight Checks",
+        "description": "MongoDB validates cluster capacity: minimum 2x free disk space, verifies index existence on target key, and ensures no active long-running transactions."
+      },
+      {
+        "phase": "2. Temporary Collection Creation",
+        "description": "A new hidden system collection is created with the new shard key and chunk ranges calculated across all destination shards."
+      },
+      {
+        "phase": "3. Initial Data Clone & Catch-up Oplog Streaming",
+        "description": "Donor shards stream baseline documents to recipient shards while live application writes continue unimpeded. Incoming oplog entries are applied in real-time."
+      },
+      {
+        "phase": "4. Critical Section Catch-up (Blocking Switchover)",
+        "description": "When oplog lag drops below 2 seconds, MongoDB enters a brief (< 2s) critical section: writes are briefly paused, final oplog entries committed, and metadata flipped."
+      },
+      {
+        "phase": "5. Metadata Commit & Drop Old Collection",
+        "description": "Config server updates cluster catalog pointing 'ecommerce.orders' to the new chunks. Donor collection files are asynchronously reclaimed."
+      }
+    ],
+    "limitations": [
+      "Storage Overhead: Requires at least 2.5x the collection data size + indexes in free disk space during the operation.",
+      "Write Pause: Requires a brief write-block window (critical section) during final metadata cutover.",
+      "Single Active Operation: Only one resharding operation can run per cluster at any given time.",
+      "Cannot Reshard Time Series or Capped Collections: Specialized collection types cannot be resharded dynamically.",
+      "CPU & I/O Overhead: Sustained oplog replication and background index rebuilding impact concurrent production latency."
+    ]
+  }
+}

@@ -1,0 +1,78 @@
+[
+  {
+    "_id": {
+      "$oid": "6aa158505e8531aeee894efb"
+    },
+    "sku": "PROD-A",
+    "name": "Product A",
+    "price": 54.99,
+    "stock": 30,
+    "is_active": true,
+    "category": "Gadgets"
+  },
+  {
+    "_id": {
+      "$oid": "6aa158505e8531aeee894efc"
+    },
+    "sku": "PROD-B",
+    "name": "Product B",
+    "price": 79.99,
+    "stock": 60,
+    "is_active": true,
+    "category": "Gadgets"
+  },
+  {
+    "_id": {
+      "$oid": "6aa158505e8531aeee894efd"
+    },
+    "sku": "PROD-C",
+    "name": "Product C",
+    "price": 19.99,
+    "stock": 20,
+    "is_active": true,
+    "category": "Accessories"
+  },
+  {
+    "_id": {
+      "$oid": "6aa158505e8531aeee894efe"
+    },
+    "sku": "PROD-D",
+    "name": "Product D",
+    "price": 129.99,
+    "stock": 30,
+    "is_active": false,
+    "category": "Hardware"
+  },
+  {
+    "_id": {
+      "$oid": "6aa158505e8531aeee894eff"
+    },
+    "sku": "PROD-E",
+    "name": "Product E",
+    "price": 249.99,
+    "stock": 45,
+    "is_active": false,
+    "category": "Hardware"
+  },
+  {
+    "_id": {
+      "$oid": "6aa158503146b32fe02a9cbf"
+    },
+    "sku": "PROD-F",
+    "category": "Accessories",
+    "is_active": true,
+    "name": "Wireless Charging Pad F",
+    "price": 39.99,
+    "stock": 100
+  },
+  {
+    "_id": {
+      "$oid": "6aa158503146b32fe02a9cc0"
+    },
+    "sku": "PROD-G",
+    "is_active": true,
+    "name": "Product G",
+    "price": 89.99,
+    "stock": 15
+  }
+]

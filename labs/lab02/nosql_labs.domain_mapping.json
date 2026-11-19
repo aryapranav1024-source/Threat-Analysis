@@ -1,0 +1,90 @@
+[{
+  "_id": {
+    "$oid": "6a8fc62f678810da9a84a771"
+  },
+  "domain": "Healthcare",
+  "sub_domain": "Electronic Health Records (EHR)",
+  "nosql_family": "Document",
+  "recommended_db": "MongoDB",
+  "reasoning": "Patient records are inherently semi-structured - each patient may have different diagnoses, medications, lab results, and visit histories. A Document store like MongoDB handles this variability naturally with flexible JSON schemas. Each patient document can contain nested arrays of visits, prescriptions, and lab results without requiring rigid relational joins."
+},
+{
+  "_id": {
+    "$oid": "6a8fc62f678810da9a84a772"
+  },
+  "domain": "Healthcare",
+  "sub_domain": "Patient Vitals & Monitoring (ICU)",
+  "nosql_family": "Wide-Column / Time-Series",
+  "recommended_db": "Apache Cassandra / InfluxDB",
+  "reasoning": "ICU monitoring devices generate continuous streams of time-stamped vital signs (heart rate, blood pressure, SpO2) at high frequency. This is classic time-series data requiring high write throughput and efficient range queries by timestamp. Wide-Column stores like Cassandra handle this well with partition keys (patient ID) and clustering keys (timestamp), enabling fast sequential reads of a patient's vitals."
+},
+{
+  "_id": {
+    "$oid": "6a8fc62f678810da9a84a773"
+  },
+  "domain": "Healthcare",
+  "sub_domain": "Drug Interaction Networks",
+  "nosql_family": "Graph",
+  "recommended_db": "Neo4j",
+  "reasoning": "Drug interactions form a complex network of relationships: Drug A interacts with Drug B, which is contraindicated for Condition C, which is treated by Drug D. Graph databases excel at traversing these multi-hop relationships to detect dangerous drug combinations. Neo4j can answer queries like 'find all drugs that interact with a patient's current medications within 3 degrees' efficiently."
+},
+{
+  "_id": {
+    "$oid": "6a8fc62f678810da9a84a774"
+  },
+  "domain": "E-Commerce",
+  "sub_domain": "Product Catalog",
+  "nosql_family": "Document",
+  "recommended_db": "MongoDB",
+  "reasoning": "E-commerce product catalogs are highly heterogeneous - a laptop has specs like RAM and CPU, while a shirt has size and color. Document stores handle this polymorphism naturally: each product document can have different fields without requiring sparse relational tables. MongoDB's flexible schema allows adding new product categories without schema migrations."
+},
+{
+  "_id": {
+    "$oid": "6a8fc62f678810da9a84a775"
+  },
+  "domain": "E-Commerce",
+  "sub_domain": "Shopping Cart & Session Data",
+  "nosql_family": "Key-Value",
+  "recommended_db": "Redis",
+  "reasoning": "Shopping carts and user sessions require ultra-low latency reads/writes with simple key-based access patterns (get cart by session ID). Redis, as an in-memory key-value store, provides sub-millisecond response times. Its TTL (time-to-live) feature automatically expires abandoned sessions. The hash data type maps perfectly to cart items (field = product_id, value = quantity)."
+},
+{
+  "_id": {
+    "$oid": "6a8fc62f678810da9a84a776"
+  },
+  "domain": "E-Commerce",
+  "sub_domain": "Recommendation Engine (\"Customers who bought X also bought Y\")",
+  "nosql_family": "Graph",
+  "recommended_db": "Neo4j / Amazon Neptune",
+  "reasoning": "Recommendation engines rely on traversing relationships: User->Purchased->Product, User->Viewed->Product, Product->BelongsTo->Category. Graph databases can efficiently compute collaborative filtering by finding users with similar purchase patterns and recommending products that are 2-3 hops away in the graph. This is computationally expensive in relational databases but natural in graph stores."
+},
+{
+  "_id": {
+    "$oid": "6a8fc62f678810da9a84a777"
+  },
+  "domain": "IoT Fleet Management",
+  "sub_domain": "Vehicle Telemetry (GPS, speed, fuel)",
+  "nosql_family": "Wide-Column / Time-Series",
+  "recommended_db": "Apache Cassandra / InfluxDB",
+  "reasoning": "Fleet vehicles continuously emit telemetry data (GPS coordinates, speed, fuel level, engine diagnostics) at regular intervals. This is high-volume, append-heavy time-series data. Cassandra's partition-by-vehicle-ID and cluster-by-timestamp model enables efficient storage and retrieval of a vehicle's history. The write throughput can scale horizontally to handle thousands of vehicles reporting simultaneously."
+},
+{
+  "_id": {
+    "$oid": "6a8fc62f678810da9a84a778"
+  },
+  "domain": "IoT Fleet Management",
+  "sub_domain": "Vehicle Maintenance Records",
+  "nosql_family": "Document",
+  "recommended_db": "MongoDB",
+  "reasoning": "Maintenance records are semi-structured documents: each record includes the vehicle ID, date, mechanic notes, parts replaced (varying list), cost breakdown, and warranty info. Different vehicle types (trucks vs. vans) have different maintenance schemas. MongoDB's document model handles this variability while supporting rich queries like 'find all vehicles whose brakes were serviced more than 6 months ago'."
+},
+{
+  "_id": {
+    "$oid": "6a8fc62f678810da9a84a779"
+  },
+  "domain": "IoT Fleet Management",
+  "sub_domain": "Real-time Alerts & Geofencing Cache",
+  "nosql_family": "Key-Value",
+  "recommended_db": "Redis",
+  "reasoning": "Geofencing requires checking each vehicle's current position against predefined boundaries in real-time. Redis Geo commands (GEOADD, GEORADIUS) provide O(log N) spatial lookups in memory. Alert states ('vehicle 42 exceeded speed limit') are stored as simple key-value pairs with TTL for auto-expiration. The pub/sub feature enables real-time alert broadcasting to dispatchers."
+}]

@@ -1,0 +1,80 @@
+[
+  {
+    "key": "w1_j0",
+    "display": "w:1, j:false",
+    "w": "1",
+    "j": false,
+    "total_s": 1.0,
+    "avg_ms": 0.99,
+    "p50_ms": 0.91,
+    "p99_ms": 2.45,
+    "throughput_ops": 1004.9,
+    "cap_position": "AP-leaning",
+    "scenario": "Caching, session data (lowest latency)"
+  },
+  {
+    "key": "w1_j1",
+    "display": "w:1, j:true",
+    "w": "1",
+    "j": true,
+    "total_s": 2.21,
+    "avg_ms": 2.21,
+    "p50_ms": 1.98,
+    "p99_ms": 5.15,
+    "throughput_ops": 452.7,
+    "cap_position": "CP-leaning",
+    "scenario": "Standard application data (disk durable on primary)"
+  },
+  {
+    "key": "wmaj_j0",
+    "display": "w:majority, j:false",
+    "w": "majority",
+    "j": false,
+    "total_s": 6.03,
+    "avg_ms": 6.03,
+    "p50_ms": 5.3,
+    "p99_ms": 13.56,
+    "throughput_ops": 165.8,
+    "cap_position": "Strong CP (mem)",
+    "scenario": "Quorum replicated in-memory"
+  },
+  {
+    "key": "wmaj_j1",
+    "display": "w:majority, j:true",
+    "w": "majority",
+    "j": true,
+    "total_s": 3.92,
+    "avg_ms": 3.92,
+    "p50_ms": 3.73,
+    "p99_ms": 7.08,
+    "throughput_ops": 255.0,
+    "cap_position": "Strong CP",
+    "scenario": "Financial transactions (quorum + journal)"
+  },
+  {
+    "key": "wall_j0",
+    "display": "w:all (w:3), j:false",
+    "w": "3",
+    "j": false,
+    "total_s": 4.33,
+    "avg_ms": 4.32,
+    "p50_ms": 4.12,
+    "p99_ms": 7.97,
+    "throughput_ops": 231.1,
+    "cap_position": "Strongest CP (mem)",
+    "scenario": "All 3 nodes synchronized"
+  },
+  {
+    "key": "wall_j1",
+    "display": "w:all (w:3), j:true",
+    "w": "3",
+    "j": true,
+    "total_s": 5.63,
+    "avg_ms": 5.63,
+    "p50_ms": 5.29,
+    "p99_ms": 12.64,
+    "throughput_ops": 177.6,
+    "cap_position": "Strongest CP",
+    "scenario": "Regulatory compliance & critical audit log"
+  }
+]

@@ -1,0 +1,149 @@
+[
+  {
+    "_id": {
+      "$oid": "6a9e88fa7483929a7bfb5327"
+    },
+    "code": "CS101",
+    "title": "Introduction to Programming",
+    "instructor": "Dr. Sarah Jenkins",
+    "credits": 4,
+    "prerequisites": [],
+    "schedule": {
+      "days": [
+        "Monday",
+        "Wednesday"
+      ],
+      "time": "09:00-10:30",
+      "room": "LH-101"
+    },
+    "enrolled_students": [
+      {
+        "student_id": "STU1001",
+        "name": "Arjun Mehta",
+        "grade": "A"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6a9e88fa7483929a7bfb5328"
+    },
+    "code": "MATH201",
+    "title": "Linear Algebra & Calculus",
+    "instructor": "Dr. Ramanujan Iyer",
+    "credits": 4,
+    "prerequisites": [],
+    "schedule": {
+      "days": [
+        "Tuesday",
+        "Thursday"
+      ],
+      "time": "10:00-11:30",
+      "room": "LH-105"
+    },
+    "enrolled_students": [
+      {
+        "student_id": "STU1001",
+        "name": "Arjun Mehta",
+        "grade": "A-"
+      },
+      {
+        "student_id": "STU1002",
+        "name": "Sneha Reddy",
+        "grade": "B+"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6a9e88fa7483929a7bfb5329"
+    },
+    "code": "CS201",
+    "title": "Data Structures & Algorithms",
+    "instructor": "Dr. Sarah Jenkins",
+    "credits": 4,
+    "prerequisites": [
+      "CS101"
+    ],
+    "schedule": {
+      "days": [
+        "Monday",
+        "Wednesday"
+      ],
+      "time": "11:00-12:30",
+      "room": "LH-102"
+    },
+    "enrolled_students": [
+      {
+        "student_id": "STU1001",
+        "name": "Arjun Mehta",
+        "grade": "A"
+      },
+      {
+        "student_id": "STU1003",
+        "name": "Rahul Kumar",
+        "grade": "B"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6a9e88fa7483929a7bfb532a"
+    },
+    "code": "AIML101",
+    "title": "Introduction to Machine Learning",
+    "instructor": "Dr. Priya Sharma",
+    "credits": 4,
+    "prerequisites": [
+      "CS201",
+      "MATH201"
+    ],
+    "schedule": {
+      "days": [
+        "Monday",
+        "Wednesday"
+      ],
+      "time": "14:00-15:30",
+      "room": "LH-201"
+    },
+    "enrolled_students": [
+      {
+        "student_id": "STU1001",
+        "name": "Arjun Mehta",
+        "grade": "A"
+      },
+      {
+        "student_id": "STU1002",
+        "name": "Sneha Reddy",
+        "grade": "B+"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6a9e88fa7483929a7bfb532b"
+    },
+    "code": "AIML301",
+    "title": "Deep Learning with PyTorch",
+    "instructor": "Dr. Anil Gupta",
+    "credits": 3,
+    "prerequisites": [
+      "AIML101"
+    ],
+    "schedule": {
+      "days": [
+        "Tuesday",
+        "Thursday"
+      ],
+      "time": "14:00-15:30",
+      "room": "LH-305"
+    },
+    "enrolled_students": [
+      {
+        "student_id": "STU1001",
+        "name": "Arjun Mehta",
+        "grade": null
+      }
+    ]
+  }
+]

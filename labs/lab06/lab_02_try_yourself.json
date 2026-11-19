@@ -1,0 +1,102 @@
+{
+  "lab": "Activity 1.2: Covered Queries",
+  "index_used": "idx_cat_price_sku (category: 1, price: 1, sku: 1)",
+  "results": [
+    {
+      "case": "Case A: Non-Covered (Requests unindexed 'stock')",
+      "filter": {
+        "category": "Electronics",
+        "price": {
+          "$gte": 50.0,
+          "$lte": 200.0
+        }
+      },
+      "projection": {
+        "category": 1,
+        "price": 1,
+        "sku": 1,
+        "stock": 1,
+        "_id": 0
+      },
+      "stage": "PROJECTION_SIMPLE",
+      "input_stage": "FETCH",
+      "keys_examined": 498,
+      "docs_examined": 498,
+      "fetch_eliminated": false
+    },
+    {
+      "case": "Case B: Non-Covered (Default '_id' implicitly included)",
+      "filter": {
+        "category": "Electronics",
+        "price": {
+          "$gte": 50.0,
+          "$lte": 200.0
+        }
+      },
+      "projection": {
+        "category": 1,
+        "price": 1,
+        "sku": 1
+      },
+      "stage": "PROJECTION_SIMPLE",
+      "input_stage": "FETCH",
+      "keys_examined": 498,
+      "docs_examined": 498,
+      "fetch_eliminated": false
+    },
+    {
+      "case": "Case C: Fully Covered Query (All fields in index, '_id': 0)",
+      "filter": {
+        "category": "Electronics",
+        "price": {
+          "$gte": 50.0,
+          "$lte": 200.0
+        }
+      },
+      "projection": {
+        "category": 1,
+        "price": 1,
+        "sku": 1,
+        "_id": 0
+      },
+      "stage": "PROJECTION_COVERED",
+      "input_stage": "IXSCAN",
+      "keys_examined": 498,
+      "docs_examined": 0,
+      "fetch_eliminated": true
+    }
+  ],
+  "benchmark": {
+    "iterations": 1500,
+    "non_covered_latency_ms": 0.901,
+    "covered_latency_ms": 0.694,
+    "speedup_factor": 1.3
+  },
+  "sample_covered_results": [
+    {
+      "category": "Electronics",
+      "price": 50.37,
+      "sku": "SKU-ELE-03812"
+    },
+    {
+      "category": "Electronics",
+      "price": 50.75,
+      "sku": "SKU-ELE-00660"
+    },
+    {
+      "category": "Electronics",
+      "price": 50.89,
+      "sku": "SKU-ELE-00601"
+    },
+    {
+      "category": "Electronics",
+      "price": 50.89,
+      "sku": "SKU-ELE-06452"
+    },
+    {
+      "category": "Electronics",
+      "price": 51.49,
+      "sku": "SKU-ELE-01105"
+    }
+  ]
+}

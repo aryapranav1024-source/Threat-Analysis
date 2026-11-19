@@ -1,15 +1,41 @@
-# NoSQL Database Lab 7: Production Schema Analysis & Working Set Analysis
+# NoSQL Database Engineering — Complete Labs Suite (Labs 1–18) & CTI SOC Platform
 **Student:** K. Pranav Reddy  
 **Roll Number:** 24BTRCL098  
-**Course:** NoSQL Database Lab 7  
-**Database:** MongoDB v8.3.7 Community  
-**Platform:** Consolidated Cyber Threat Intelligence (CTI) Full-Stack Platform  
+**Live Deployed SOC Platform:** [https://threat-analysis.onrender.com](https://threat-analysis.onrender.com)  
+**Docker Hub Profile:** [https://hub.docker.com/u/aryapranav1024](https://hub.docker.com/u/aryapranav1024)  
+
+---
+
+## 📚 Complete Laboratory Suite Index (Labs 1 to 18)
+
+All 18 laboratory source files, benchmarks, Dockerfiles, and submission reports are organized in the [`/labs`](./labs) directory:
+
+| Lab | Title & Topic | Directory | Docker Hub Repository |
+| :---: | :--- | :---: | :--- |
+| **Lab 01** | Classification of NoSQL Databases | [`/labs/lab01`](./labs/lab01) | — |
+| **Lab 02** | Application Domain Mapping | [`/labs/lab02`](./labs/lab02) | — |
+| **Lab 03** | Schema Design: Embedded vs. Referencing ($bsonSize) | [`/labs/lab03`](./labs/lab03) | — |
+| **Lab 04** | CRUD Operations, Query Operators & Pagination | [`/labs/lab04`](./labs/lab04) | — |
+| **Lab 05** | Aggregation Framework & $lookup Joins | [`/labs/lab05`](./labs/lab05) | — |
+| **Lab 06** | Indexing Strategies & ESR Rule Optimization | [`/labs/lab06`](./labs/lab06) | — |
+| **Lab 07** | Production Schema Analysis & WiredTiger Cache Fit | [`/labs/lab07`](./labs/lab07) | Included in platform |
+| **Lab 08** | Replica Set Deployment & High Availability Failover | [`/labs/lab08`](./labs/lab08) | Included in platform |
+| **Lab 09** | Write Concern Latency Benchmarks & CAP Partitions | [`/labs/lab09`](./labs/lab09) | [`aryapranav1024/mongodb-lab-09`](https://hub.docker.com/r/aryapranav1024/mongodb-lab-09) |
+| **Lab 10** | Multi-Document ACID Transactions & OCC | [`/labs/lab10`](./labs/lab10) | [`aryapranav1024/mongodb-lab-10`](https://hub.docker.com/r/aryapranav1024/mongodb-lab-10) |
+| **Lab 11** | Sharded Clusters & Hotspot vs Hashed Keys | [`/labs/lab11`](./labs/lab11) | [`aryapranav1024/nosql-lab11`](https://hub.docker.com/r/aryapranav1024/nosql-lab11) |
+| **Lab 12** | Authentication, RBAC, Field Redaction & TLS | [`/labs/lab12`](./labs/lab12) | [`aryapranav1024/nosql-lab12`](https://hub.docker.com/r/aryapranav1024/nosql-lab12) |
+| **Lab 13** | Kubernetes StatefulSet & Production IaC | [`/labs/lab13`](./labs/lab13) | [`aryapranav1024/nosql-lab13`](https://hub.docker.com/r/aryapranav1024/nosql-lab13) |
+| **Lab 14** | Operations Monitoring & Automated Backup/Restore | [`/labs/lab14`](./labs/lab14) | [`aryapranav1024/nosql-lab14`](https://hub.docker.com/r/aryapranav1024/nosql-lab14) |
+| **Lab 15** | Multi-Tenant SaaS Architecture & Tenant Migration | [`/labs/lab15`](./labs/lab15) | [`aryapranav1024/nosql-lab15`](https://hub.docker.com/r/aryapranav1024/nosql-lab15) |
+| **Lab 16** | Polyglot Data Modeling & Hybrid Query Service | [`/labs/lab16`](./labs/lab16) | [`aryapranav1024/nosql-lab16`](https://hub.docker.com/r/aryapranav1024/nosql-lab16) |
+| **Lab 17** | RAG Pipeline & Vector Indexing (HNSW vs IVF) | [`/labs/lab17`](./labs/lab17) | [`aryapranav1024/nosql-lab17`](https://hub.docker.com/r/aryapranav1024/nosql-lab17) |
+| **Lab 18** | Comparative Capstone: Live MongoDB vs Cassandra/Neo4j | [`/labs/lab18`](./labs/lab18) | [`aryapranav1024/nosql-lab18`](https://hub.docker.com/r/aryapranav1024/nosql-lab18) |
 
 ---
 
 ## Executive Summary & Project Structure
 
-This project consolidates **Lab 7.1: Analyze a Production Schema** and **Lab 7.2: Working Set Analysis** into a production-grade Cyber Threat Intelligence Platform featuring full-text search, automated threat classification, indicator of compromise (IOC) extraction, WiredTiger cache monitoring, and an interactive schema inspector.
+This project consolidates **all 18 NoSQL Engineering Labs** and deploys a production-grade Cyber Threat Intelligence Platform featuring full-text search, automated threat classification, indicator of compromise (IOC) extraction, WiredTiger cache monitoring, and an interactive schema inspector.
 
 ```
 lab 7/

@@ -1,0 +1,96 @@
+[{
+  "_id": {
+    "$oid": "6a8fc5f990bbb4c8b2420488"
+  },
+  "app": "Ride-Sharing",
+  "domain": "user_profiles",
+  "description": "Rider and driver profiles with preferences, rating history, payment methods",
+  "read_write_pattern": "Read-heavy, updated on each ride",
+  "recommended_family": "Document",
+  "recommended_db": "MongoDB",
+  "rationale": "Nested structure (preferences, vehicles, payment methods) maps well to documents"
+},
+{
+  "_id": {
+    "$oid": "6a8fc5f990bbb4c8b2420489"
+  },
+  "app": "Ride-Sharing",
+  "domain": "ride_history",
+  "description": "Completed ride records with route, fare, driver, passenger, timestamps",
+  "read_write_pattern": "Write-heavy (append-only), range queries by date",
+  "recommended_family": "Wide-Column",
+  "recommended_db": "Apache Cassandra",
+  "rationale": "High write throughput, time-range queries, horizontal scalability"
+},
+{
+  "_id": {
+    "$oid": "6a8fc5f990bbb4c8b242048a"
+  },
+  "app": "Ride-Sharing",
+  "domain": "real_time_tracking",
+  "description": "Live GPS positions of active drivers, updated every 1-3 seconds",
+  "read_write_pattern": "Extreme write + read, TTL-based expiry",
+  "recommended_family": "Key-Value",
+  "recommended_db": "Redis",
+  "rationale": "Sub-millisecond reads, built-in TTL for stale positions, geospatial commands"
+},
+{
+  "_id": {
+    "$oid": "6a8fc5f990bbb4c8b242048b"
+  },
+  "app": "Ride-Sharing",
+  "domain": "payment_transactions",
+  "description": "Payment records, refund logs, driver earnings, fare splits",
+  "read_write_pattern": "Write-once, strong consistency required",
+  "recommended_family": "Document",
+  "recommended_db": "MongoDB (with ACID transactions)",
+  "rationale": "Multi-document transactions for fare splits, flexible schema for varied payment types"
+},
+{
+  "_id": {
+    "$oid": "6a8fc5f990bbb4c8b242048c"
+  },
+  "app": "Social Media Analytics",
+  "domain": "content_feed",
+  "description": "Posts, articles, media metadata with engagement metrics",
+  "read_write_pattern": "Read-heavy, fan-out on write",
+  "recommended_family": "Document",
+  "recommended_db": "MongoDB",
+  "rationale": "Flexible content schema, nested engagement counters, full-text search"
+},
+{
+  "_id": {
+    "$oid": "6a8fc5f990bbb4c8b242048d"
+  },
+  "app": "Social Media Analytics",
+  "domain": "social_graph",
+  "description": "Follow/friend relationships, influence propagation, community detection",
+  "read_write_pattern": "Traversals (multi-hop), relationship queries",
+  "recommended_family": "Graph",
+  "recommended_db": "Neo4j",
+  "rationale": "Native graph traversals for friend-of-friend, shortest path, community detection"
+},
+{
+  "_id": {
+    "$oid": "6a8fc5f990bbb4c8b242048e"
+  },
+  "app": "Social Media Analytics",
+  "domain": "sentiment_timeseries",
+  "description": "Hourly/daily sentiment scores per brand/topic, trend analysis",
+  "read_write_pattern": "Time-series append, range scans, aggregation",
+  "recommended_family": "Wide-Column",
+  "recommended_db": "Apache Cassandra",
+  "rationale": "Time-partitioned rows, high write throughput from streaming pipeline"
+},
+{
+  "_id": {
+    "$oid": "6a8fc5f990bbb4c8b242048f"
+  },
+  "app": "Social Media Analytics",
+  "domain": "media_assets",
+  "description": "Images, videos, profile pictures stored as objects",
+  "read_write_pattern": "Write-once, read-many, CDN delivery",
+  "recommended_family": "Object/Key-Value",
+  "recommended_db": "Amazon S3",
+  "rationale": "Unlimited scalable object storage with CDN integration"
+}]

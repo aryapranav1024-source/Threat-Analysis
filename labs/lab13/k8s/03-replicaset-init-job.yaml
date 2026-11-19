@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongo-rs-init
+  namespace: nosql-labs
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: rs-init
+          image: mongo:7.0
+          command:
+            - mongosh
+            - "--host=mongo-0.mongo.nosql-labs.svc.cluster.local"
+            - "--eval"
+            - >
+              rs.initiate({
+                _id: "rs0",
+                members: [
+                  {_id: 0, host: "mongo-0.mongo.nosql-labs.svc.cluster.local:27017"},
+                  {_id: 1, host: "mongo-1.mongo.nosql-labs.svc.cluster.local:27017"},
+                  {_id: 2, host: "mongo-2.mongo.nosql-labs.svc.cluster.local:27017"}
+                ]
+              })

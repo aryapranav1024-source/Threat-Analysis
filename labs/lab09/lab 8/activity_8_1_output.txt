@@ -1,0 +1,45 @@
+======================================================================
+   LAB 8.1: DEPLOY A LOCAL REPLICA SET (3 NODES)
+======================================================================
+
+======================================================================
+  Step 1: Verify and Start Docker 3-Node Cluster
+======================================================================
+[OK] Docker Compose services (mongo1, mongo2, mongo3) are UP.
+
+======================================================================
+  Step 2: Initialize Replica Set rs0 via mongosh
+======================================================================
+mongosh init response: { ok: 1 }
+Waiting 10 seconds for replica set election...
+
+======================================================================
+  Step 3: Check rs.status() - Member Roles & Health States
+======================================================================
+Member Host               | State / Role    | Health   | Uptime (s)
+--------------------------------------------------------------------
+mongo1:27017              | SECONDARY       | 1.0      | 10        
+mongo2:27018              | SECONDARY       | 1.0      | 10        
+mongo3:27019              | PRIMARY         | 1.0      | 226       
+--------------------------------------------------------------------
+-> Active PRIMARY    : mongo3:27019
+-> Active SECONDARIES: mongo1:27017, mongo2:27018
+
+======================================================================
+  Step 4: Insert Document into Primary and Verify on Secondaries
+======================================================================
+[OK] Document successfully inserted into PRIMARY!
+     _id: 6ac66807c0c21e5093f16354
+     Data: {'lab': '8.1', 'title': 'Local Replica Set Deployment', 'description': 'Verifying multi-node data synchronization', 'created_at': '2026-10-07 15:40:55', '_id': ObjectId('6ac66807c0c21e5093f16354')}
+
+Allowing 2 seconds for oplog replication across all members...
+
+Direct Verification on Each Node:
+--------------------------------------------------------------------
+  Node mongo1:27017       -> Document Found: YES [REPLICATED] (title: Local Replica Set Deployment)
+  Node mongo2:27018       -> Document Found: YES [REPLICATED] (title: Local Replica Set Deployment)
+  Node mongo3:27019       -> Document Found: YES [REPLICATED] (title: Local Replica Set Deployment)
+
+======================================================================
+  Lab 8.1 Verification Finished Successfully
+======================================================================

@@ -1,0 +1,29 @@
+# Environment & secrets
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Zip submissions (large files)
+*.zip
+
+# Temp/scratch files
+check_enrichment.py
+test_vt_live.py

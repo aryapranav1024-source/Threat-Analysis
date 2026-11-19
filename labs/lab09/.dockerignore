@@ -1,0 +1,31 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+*.zip
+*.docx
+*.pdf
+!K.PRANAV_REDDY_24BTRCL098_LAB_09.pdf
+lab 7/.git/
+lab 7/screenshots/
+lab 7/backend/
+lab 7/frontend/
+lab 7/Procfile
+lab 7/render.yaml
+lab 7/README.md
+lab 7/enrich_iocs_virustotal.py
+lab 7/entity_resolution_pipeline.py
+lab 7/generate_entity_resolution_doc.py
+lab 7/check_enrichment.py
+lab 7/seed_cti_data.py
+lab 7/test_vt_live.py
+lab 7/ThreatAnalysis_Entity_Resolution_Report.docx
+lab 7/7.2 lab_01_production_schema.py
+lab 7/7.2 lab_02_working_set_analysis.py
+lab 8/LAB_08_REPORT.docx
+lab 8/activity_8_1_output.txt
+lab 8/activity_8_1_try_output.txt
+lab 8/activity_8_2_output.txt
+lab 8/activity_8_2_try_output.txt
+generate_pdf_report.py

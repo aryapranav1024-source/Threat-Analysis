@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  mongodb-security:
+    build: .
+    image: pranav24btrcl098/mongodb-security-lab12:latest
+    container_name: mongodb_security_lab12
+    ports:
+      - "27017:27017"
+      - "27100:27100"
+    stdin_open: true
+    tty: true
+    restart: unless-stopped

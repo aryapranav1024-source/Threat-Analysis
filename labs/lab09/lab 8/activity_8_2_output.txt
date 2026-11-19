@@ -1,0 +1,50 @@
+===========================================================================
+   LAB 8.2: OBSERVE FAILOVER, ELECTION, AND CLIENT RECONNECTION
+===========================================================================
+
+===========================================================================
+  Continuous Read Stream & Failover Reconnection Observation
+===========================================================================
+Connecting to Replica Set: mongodb://mongo1:27017,mongo2:27018,mongo3:27019/?replicaSet=rs0
+[INITIAL CONNECTION] Connected to Primary Node: ('mongo3', 27019)
+Starting live read stream (polling every 1.5 seconds)...
+---------------------------------------------------------------------------
+Timestamp  | Read Status            | Connected Primary Node    | Notes
+---------------------------------------------------------------------------
+15:47:27   | READ SUCCESS           | ('mongo3', 27019)         | Normal Primary Read
+15:47:28   | READ SUCCESS           | ('mongo3', 27019)         | Normal Primary Read
+15:47:30   | READ SUCCESS           | ('mongo3', 27019)         | Normal Primary Read
+15:47:31   | READ SUCCESS           | ('mongo3', 27019)         | Normal Primary Read
+
+[FAILOVER TRIGGER] >>> Executing rs.stepDown(60) on Primary mongo3:27019... <<<
+15:47:33   | READ SUCCESS           | ('mongo3', 27019)         | Normal Primary Read
+15:47:34   | READ SUCCESS           | ('mongo1', 27017)         | *** RECONNECTED TO NEW PRIMARY! ***
+15:47:36   | READ SUCCESS           | ('mongo1', 27017)         | Operating on New Primary
+15:47:37   | READ SUCCESS           | ('mongo1', 27017)         | Operating on New Primary
+15:47:39   | READ SUCCESS           | ('mongo1', 27017)         | Operating on New Primary
+15:47:40   | READ SUCCESS           | ('mongo1', 27017)         | Operating on New Primary
+15:47:42   | READ SUCCESS           | ('mongo1', 27017)         | Operating on New Primary
+15:47:43   | READ SUCCESS           | ('mongo1', 27017)         | Operating on New Primary
+15:47:45   | READ SUCCESS           | ('mongo1', 27017)         | Operating on New Primary
+15:47:46   | READ SUCCESS           | ('mongo1', 27017)         | Operating on New Primary
+15:47:48   | READ SUCCESS           | ('mongo1', 27017)         | Operating on New Primary
+15:47:49   | READ SUCCESS           | ('mongo1', 27017)         | Operating on New Primary
+
+===========================================================================
+  Post-Failover rs.status() Inspection
+===========================================================================
+Member Host               | State / Role    | Health   | Election Time
+------------------------------------------------------------------------
+mongo1:27017              | PRIMARY         | 1.0      | Timestamp(1791388053, 1)
+mongo2:27018              | SECONDARY       | 1.0      | N/A
+mongo3:27019              | SECONDARY       | 1.0      | N/A
+mongo-arbiter:27020       | ARBITER         | 1.0      | N/A
+
+===========================================================================
+  Summary of Failover Observation
+===========================================================================
+  Initial Primary Node : ('mongo3', 27019)
+  Failover Triggered   : rs.stepDown(60)
+  New Primary Elected  : ('mongo1', 27017)
+  Client Behavior      : Seamless automatic failover reconnection without application crash!
+===========================================================================

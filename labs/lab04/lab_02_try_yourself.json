@@ -1,0 +1,82 @@
+[
+  {
+    "_id": {
+      "$oid": "6aa158513146b32fe02a9cc1"
+    },
+    "sku": "SKU-101",
+    "category": "Hardware",
+    "name": "Mechanical Keyboard Pro",
+    "price": 99.99,
+    "stock": 45
+  },
+  {
+    "_id": {
+      "$oid": "6aa158513146b32fe02a9cc2"
+    },
+    "sku": "SKU-102",
+    "category": "Networking",
+    "name": "Ultra-Fast Wireless Router",
+    "price": 89.99,
+    "stock": 35
+  },
+  {
+    "_id": {
+      "$oid": "6aa158513146b32fe02a9cc3"
+    },
+    "sku": "SKU-103",
+    "category": "Audio",
+    "name": "Noise Cancelling Earbuds",
+    "price": 59.99,
+    "stock": 100
+  },
+  {
+    "_id": {
+      "$oid": "6aa158513146b32fe02a9cc4"
+    },
+    "sku": "SKU-104",
+    "category": "Video",
+    "name": "4K USB-C Webcam",
+    "price": 79.99,
+    "stock": 25
+  },
+  {
+    "_id": {
+      "$oid": "6aa158513146b32fe02a9cc5"
+    },
+    "sku": "SKU-105",
+    "category": "Mounts",
+    "name": "Aluminium Monitor Arm",
+    "price": 49.99,
+    "stock": 60
+  },
+  {
+    "_id": {
+      "$oid": "6aa158513146b32fe02a9cc6"
+    },
+    "sku": "SKU-106",
+    "category": "Hardware",
+    "name": "Ergonomic Vertical Mouse",
+    "price": 39.99,
+    "stock": 90
+  },
+  {
+    "_id": {
+      "$oid": "6aa158513146b32fe02a9cc7"
+    },
+    "sku": "SKU-107",
+    "category": "Hubs",
+    "name": "Thunderbolt 4 Docking Station",
+    "price": 189.99,
+    "stock": 15
+  },
+  {
+    "_id": {
+      "$oid": "6aa158513146b32fe02a9cc8"
+    },
+    "sku": "SKU-108",
+    "category": "Lighting",
+    "name": "Streamer LED Key Light",
+    "price": 64.99,
+    "stock": 40
+  }
+]

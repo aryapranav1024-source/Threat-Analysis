@@ -1,0 +1,60 @@
+[
+  {
+    "rank": 1,
+    "index_name": "idx_cat_price",
+    "keys": {
+      "category": 1,
+      "price": 1
+    },
+    "ops": 150,
+    "since": "2026-09-28 09:09:50"
+  },
+  {
+    "rank": 2,
+    "index_name": "idx_name_text",
+    "keys": {
+      "_fts": "text",
+      "_ftsx": 1
+    },
+    "ops": 110,
+    "since": "2026-09-28 09:09:52"
+  },
+  {
+    "rank": 3,
+    "index_name": "idx_price",
+    "keys": {
+      "price": 1
+    },
+    "ops": 90,
+    "since": "2026-09-28 09:09:50"
+  },
+  {
+    "rank": 4,
+    "index_name": "idx_tags",
+    "keys": {
+      "tags": 1
+    },
+    "ops": 65,
+    "since": "2026-09-28 09:09:51"
+  },
+  {
+    "rank": 5,
+    "index_name": "idx_cat_rating_stock",
+    "keys": {
+      "category": 1,
+      "rating": -1,
+      "stock": 1
+    },
+    "ops": 40,
+    "since": "2026-09-28 09:09:53"
+  },
+  {
+    "rank": 6,
+    "index_name": "_id_",
+    "keys": {
+      "_id": 1
+    },
+    "ops": 0,
+    "since": "2026-09-28 09:09:48"
+  }
+]

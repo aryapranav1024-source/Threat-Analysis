@@ -1,0 +1,479 @@
+[
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30884"
+    },
+    "product_id": "PRD-000001",
+    "name": "Ultra Laptop v5",
+    "category": "Home & Kitchen",
+    "price": 454.18,
+    "rating": 3.9,
+    "stock": 346,
+    "tags": [
+      "sale",
+      "gaming",
+      "premium",
+      "durable"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30885"
+    },
+    "product_id": "PRD-000002",
+    "name": "Pro Laptop v2",
+    "category": "Home & Kitchen",
+    "price": 472.99,
+    "rating": 3.4,
+    "stock": 287,
+    "tags": [
+      "travel",
+      "office"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30886"
+    },
+    "product_id": "PRD-000003",
+    "name": "Heavy-Duty Backpack v4",
+    "category": "Office Supplies",
+    "price": 1182.63,
+    "rating": 4.2,
+    "stock": 3,
+    "tags": [
+      "travel",
+      "durable"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30887"
+    },
+    "product_id": "PRD-000004",
+    "name": "Wireless Monitor v3",
+    "category": "Home & Kitchen",
+    "price": 1914.84,
+    "rating": 2.3,
+    "stock": 47,
+    "tags": [
+      "gaming",
+      "waterproof",
+      "office"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30888"
+    },
+    "product_id": "PRD-000005",
+    "name": "Portable Monitor v1",
+    "category": "Apparel",
+    "price": 924.25,
+    "rating": 1.5,
+    "stock": 472,
+    "tags": [
+      "gaming",
+      "sale",
+      "rechargeable"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30889"
+    },
+    "product_id": "PRD-000006",
+    "name": "Portable Desk Lamp v4",
+    "category": "Apparel",
+    "price": 148.4,
+    "rating": 3.6,
+    "stock": 395,
+    "tags": [
+      "gaming",
+      "bluetooth",
+      "travel"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc3088a"
+    },
+    "product_id": "PRD-000007",
+    "name": "Premium Monitor v8",
+    "category": "Apparel",
+    "price": 1669.87,
+    "rating": 1.7,
+    "stock": 181,
+    "tags": [
+      "office",
+      "rechargeable"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc3088b"
+    },
+    "product_id": "PRD-000008",
+    "name": "Ultra Speaker v3",
+    "category": "Books",
+    "price": 1460.95,
+    "rating": 1.7,
+    "stock": 194,
+    "tags": [
+      "office",
+      "sale",
+      "bluetooth"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc3088c"
+    },
+    "product_id": "PRD-000009",
+    "name": "Wireless Laptop v4",
+    "category": "Electronics",
+    "price": 1612.03,
+    "rating": 2.6,
+    "stock": 33,
+    "tags": [
+      "premium",
+      "waterproof"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc3088d"
+    },
+    "product_id": "PRD-000010",
+    "name": "Compact Water Bottle v7",
+    "category": "Apparel",
+    "price": 923.11,
+    "rating": 2.1,
+    "stock": 126,
+    "tags": [
+      "sale",
+      "travel",
+      "rechargeable",
+      "durable"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc3088e"
+    },
+    "product_id": "PRD-000011",
+    "name": "Portable Backpack v6",
+    "category": "Home & Kitchen",
+    "price": 1994.67,
+    "rating": 1.6,
+    "stock": 252,
+    "tags": [
+      "wireless",
+      "gaming"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc3088f"
+    },
+    "product_id": "PRD-000012",
+    "name": "Smart Keyboard v7",
+    "category": "Books",
+    "price": 136.41,
+    "rating": 2.5,
+    "stock": 239,
+    "tags": [
+      "rechargeable",
+      "sale",
+      "wireless",
+      "gaming"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30890"
+    },
+    "product_id": "PRD-000013",
+    "name": "Heavy-Duty Monitor v6",
+    "category": "Electronics",
+    "price": 594.06,
+    "rating": 1.6,
+    "stock": 1,
+    "tags": [
+      "travel",
+      "rechargeable",
+      "sale",
+      "portable"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30891"
+    },
+    "product_id": "PRD-000014",
+    "name": "Heavy-Duty Mouse v5",
+    "category": "Apparel",
+    "price": 1020.24,
+    "rating": 1.8,
+    "stock": 191,
+    "tags": [
+      "sale",
+      "travel"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30892"
+    },
+    "product_id": "PRD-000015",
+    "name": "Pro Speaker v6",
+    "category": "Office Supplies",
+    "price": 48.75,
+    "rating": 4.7,
+    "stock": 449,
+    "tags": [
+      "bluetooth",
+      "wireless",
+      "travel"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30893"
+    },
+    "product_id": "PRD-000016",
+    "name": "Portable Mouse v2",
+    "category": "Apparel",
+    "price": 977.11,
+    "rating": 1.3,
+    "stock": 389,
+    "tags": [
+      "portable",
+      "travel",
+      "eco-friendly",
+      "sale"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30894"
+    },
+    "product_id": "PRD-000017",
+    "name": "Smart Monitor v9",
+    "category": "Books",
+    "price": 852.03,
+    "rating": 1.8,
+    "stock": 276,
+    "tags": [
+      "travel",
+      "bluetooth",
+      "rechargeable",
+      "durable"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30895"
+    },
+    "product_id": "PRD-000018",
+    "name": "Wireless Water Bottle v9",
+    "category": "Office Supplies",
+    "price": 250.79,
+    "rating": 1.9,
+    "stock": 173,
+    "tags": [
+      "premium",
+      "sale"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30896"
+    },
+    "product_id": "PRD-000019",
+    "name": "Compact Speaker v4",
+    "category": "Electronics",
+    "price": 151.27,
+    "rating": 3.5,
+    "stock": 117,
+    "tags": [
+      "wireless",
+      "waterproof"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30897"
+    },
+    "product_id": "PRD-000020",
+    "name": "Ultra Smartwatch v4",
+    "category": "Fitness & Outdoors",
+    "price": 1341.26,
+    "rating": 1.9,
+    "stock": 67,
+    "tags": [
+      "premium",
+      "travel",
+      "eco-friendly",
+      "bluetooth"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30898"
+    },
+    "product_id": "PRD-000021",
+    "name": "Eco Backpack v4",
+    "category": "Electronics",
+    "price": 202.88,
+    "rating": 2.7,
+    "stock": 216,
+    "tags": [
+      "eco-friendly",
+      "wireless",
+      "gaming"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc30899"
+    },
+    "product_id": "PRD-000022",
+    "name": "Pro Backpack v6",
+    "category": "Electronics",
+    "price": 504.82,
+    "rating": 1.8,
+    "stock": 229,
+    "tags": [
+      "durable",
+      "portable"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc3089a"
+    },
+    "product_id": "PRD-000023",
+    "name": "Ergonomic Water Bottle v4",
+    "category": "Electronics",
+    "price": 891.82,
+    "rating": 4.4,
+    "stock": 281,
+    "tags": [
+      "wireless",
+      "office"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc3089b"
+    },
+    "product_id": "PRD-000024",
+    "name": "Heavy-Duty Laptop v2",
+    "category": "Home & Kitchen",
+    "price": 340.95,
+    "rating": 2.9,
+    "stock": 109,
+    "tags": [
+      "wireless",
+      "portable",
+      "durable"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc3089c"
+    },
+    "product_id": "PRD-000025",
+    "name": "Pro Backpack v5",
+    "category": "Office Supplies",
+    "price": 577.64,
+    "rating": 3.8,
+    "stock": 374,
+    "tags": [
+      "office",
+      "eco-friendly",
+      "portable",
+      "bluetooth"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc3089d"
+    },
+    "product_id": "PRD-000026",
+    "name": "Ergonomic Headphones v1",
+    "category": "Books",
+    "price": 1474.11,
+    "rating": 1.2,
+    "stock": 160,
+    "tags": [
+      "wireless",
+      "premium"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc3089e"
+    },
+    "product_id": "PRD-000027",
+    "name": "Eco Smartwatch v9",
+    "category": "Home & Kitchen",
+    "price": 123.18,
+    "rating": 3.0,
+    "stock": 435,
+    "tags": [
+      "gaming",
+      "premium"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc3089f"
+    },
+    "product_id": "PRD-000028",
+    "name": "Ultra Headphones v7",
+    "category": "Electronics",
+    "price": 1883.77,
+    "rating": 3.3,
+    "stock": 296,
+    "tags": [
+      "wireless",
+      "premium",
+      "gaming",
+      "durable"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc308a0"
+    },
+    "product_id": "PRD-000029",
+    "name": "Portable Speaker v9",
+    "category": "Fitness & Outdoors",
+    "price": 1870.06,
+    "rating": 1.8,
+    "stock": 366,
+    "tags": [
+      "bluetooth",
+      "rechargeable",
+      "durable"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6aba2edc6ef986386bc308a1"
+    },
+    "product_id": "PRD-000030",
+    "name": "Smart Monitor v8",
+    "category": "Fitness & Outdoors",
+    "price": 1858.74,
+    "rating": 4.7,
+    "stock": 4,
+    "tags": [
+      "premium",
+      "travel",
+      "gaming"
+    ]
+  }
+]

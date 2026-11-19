@@ -1,0 +1,177 @@
+{
+  "benchmark_summary": {
+    "batch_size": 10000,
+    "zero_indexes_time_sec": 0.0721,
+    "zero_indexes_docs_per_sec": 138654.9,
+    "five_indexes_time_sec": 0.5597,
+    "five_indexes_docs_per_sec": 17866.5,
+    "write_overhead_percent": 676.06,
+    "throughput_reduction_percent": 87.11
+  },
+  "retained_index_queries": [
+    {
+      "label": "Query 1: Find by Category + Sort by Price",
+      "stage": "FETCH -> IXSCAN",
+      "index_name": "idx_category_price",
+      "docs_examined": 3354,
+      "exec_ms": 22
+    },
+    {
+      "label": "Query 2: Find by Price Range ($gte, $lte)",
+      "stage": "COLLSCAN",
+      "index_name": "None (COLLSCAN)",
+      "docs_examined": 20000,
+      "exec_ms": 51
+    },
+    {
+      "label": "Query 3: Find by Tag ('wireless')",
+      "stage": "COLLSCAN",
+      "index_name": "None (COLLSCAN)",
+      "docs_examined": 20000,
+      "exec_ms": 60
+    },
+    {
+      "label": "Query 4: Search Name by Substring Regex",
+      "stage": "COLLSCAN",
+      "index_name": "None (COLLSCAN)",
+      "docs_examined": 20000,
+      "exec_ms": 74
+    },
+    {
+      "label": "Query 5: Find by Stock & Rating Range",
+      "stage": "COLLSCAN",
+      "index_name": "None (COLLSCAN)",
+      "docs_examined": 20000,
+      "exec_ms": 68
+    }
+  ],
+  "sample_documents": [
+    {
+      "sku": "SKU-0000001",
+      "name": "Smart Device #1",
+      "category": "Fitness & Outdoors",
+      "price": 345.62,
+      "rating": 4.9,
+      "stock": 498,
+      "tags": [
+        "durable",
+        "gaming"
+      ]
+    },
+    {
+      "sku": "SKU-0000002",
+      "name": "Pro Accessory #2",
+      "category": "Electronics",
+      "price": 97.11,
+      "rating": 3.8,
+      "stock": 216,
+      "tags": [
+        "waterproof",
+        "durable",
+        "bluetooth",
+        "portable"
+      ]
+    },
+    {
+      "sku": "SKU-0000003",
+      "name": "Compact Gear #3",
+      "category": "Books",
+      "price": 485.98,
+      "rating": 4.3,
+      "stock": 434,
+      "tags": [
+        "rechargeable",
+        "durable"
+      ]
+    },
+    {
+      "sku": "SKU-0000004",
+      "name": "Compact Accessory #4",
+      "category": "Fitness & Outdoors",
+      "price": 731.89,
+      "rating": 2.3,
+      "stock": 275,
+      "tags": [
+        "waterproof",
+        "rechargeable",
+        "wireless",
+        "bluetooth"
+      ]
+    },
+    {
+      "sku": "SKU-0000005",
+      "name": "Compact Tool #5",
+      "category": "Office Supplies",
+      "price": 1230.91,
+      "rating": 3.9,
+      "stock": 317,
+      "tags": [
+        "durable",
+        "gaming"
+      ]
+    },
+    {
+      "sku": "SKU-0000006",
+      "name": "Ergonomic Gear #6",
+      "category": "Home & Kitchen",
+      "price": 693.11,
+      "rating": 4.2,
+      "stock": 9,
+      "tags": [
+        "waterproof",
+        "wireless",
+        "bluetooth"
+      ]
+    },
+    {
+      "sku": "SKU-0000007",
+      "name": "Compact Device #7",
+      "category": "Apparel",
+      "price": 1133.41,
+      "rating": 1.8,
+      "stock": 243,
+      "tags": [
+        "gaming",
+        "durable"
+      ]
+    },
+    {
+      "sku": "SKU-0000008",
+      "name": "Compact Device #8",
+      "category": "Apparel",
+      "price": 647.51,
+      "rating": 2.4,
+      "stock": 229,
+      "tags": [
+        "gaming",
+        "portable"
+      ]
+    },
+    {
+      "sku": "SKU-0000009",
+      "name": "Compact Tool #9",
+      "category": "Books",
+      "price": 753.02,
+      "rating": 4.2,
+      "stock": 327,
+      "tags": [
+        "portable",
+        "bluetooth"
+      ]
+    },
+    {
+      "sku": "SKU-0000010",
+      "name": "Ergonomic Device #10",
+      "category": "Home & Kitchen",
+      "price": 1410.3,
+      "rating": 3.8,
+      "stock": 188,
+      "tags": [
+        "bluetooth",
+        "portable",
+        "wireless",
+        "rechargeable"
+      ]
+    }
+  ]
+}

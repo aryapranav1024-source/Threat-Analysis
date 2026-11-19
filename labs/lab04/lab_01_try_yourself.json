@@ -1,0 +1,92 @@
+{
+  "lab": "Lab 4.1 Try It Yourself",
+  "description": "Case-insensitive $regex search results across products collection",
+  "queries": {
+    "wireless": [
+      {
+        "sku": "PROD-002",
+        "name": "Wireless Ergonomic Mouse",
+        "price": 29.99,
+        "stock": 40,
+        "tags": [
+          "electronics",
+          "wireless",
+          "accessories"
+        ]
+      },
+      {
+        "sku": "PROD-001",
+        "name": "Wireless Noise-Cancelling Headphones",
+        "price": 149.99,
+        "stock": 25,
+        "tags": [
+          "electronics",
+          "wireless",
+          "audio",
+          "premium"
+        ]
+      }
+    ],
+    "GAMING": [
+      {
+        "sku": "PROD-003",
+        "name": "Mechanical Gaming Keyboard",
+        "price": 89.99,
+        "stock": 15,
+        "tags": [
+          "electronics",
+          "gaming"
+        ]
+      },
+      {
+        "sku": "PROD-011",
+        "name": "RGB Extended Gaming Mousepad",
+        "price": 22.0,
+        "stock": 75,
+        "tags": [
+          "gaming",
+          "accessories"
+        ]
+      }
+    ],
+    "cable": [
+      {
+        "sku": "PROD-006",
+        "name": "USB-C Fast Charging Cable",
+        "price": 12.99,
+        "stock": 120,
+        "tags": [
+          "accessories",
+          "cables"
+        ]
+      }
+    ],
+    "ultra": [
+      {
+        "sku": "PROD-005",
+        "name": "Ultra-Wide 34-Inch Monitor",
+        "price": 499.99,
+        "stock": 8,
+        "tags": [
+          "electronics",
+          "display",
+          "premium"
+        ]
+      }
+    ],
+    "headphone": [
+      {
+        "sku": "PROD-001",
+        "name": "Wireless Noise-Cancelling Headphones",
+        "price": 149.99,
+        "stock": 25,
+        "tags": [
+          "electronics",
+          "wireless",
+          "audio",
+          "premium"
+        ]
+      }
+    ]
+  }
+}

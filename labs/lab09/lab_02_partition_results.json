@@ -1,0 +1,150 @@
+[
+  {
+    "timestamp": "19:15:18",
+    "phase": "Phase 0",
+    "description": "Initial 3-node cluster healthy",
+    "details": {
+      "primary": "mongo2:27018",
+      "secondaries": [
+        "mongo1:27017",
+        "mongo3:27019"
+      ]
+    }
+  },
+  {
+    "timestamp": "19:15:18",
+    "phase": "Phase 1",
+    "description": "Baseline writes completed",
+    "details": {
+      "w1": {
+        "ok": true,
+        "lat_ms": 12.39
+      },
+      "w_majority": {
+        "ok": true,
+        "lat_ms": 20.19
+      },
+      "w_all": {
+        "ok": true,
+        "lat_ms": 16.88
+      }
+    }
+  },
+  {
+    "timestamp": "19:15:18",
+    "phase": "Phase 2",
+    "description": "Disconnected mongo3 from lab8_mongo-net",
+    "details": {}
+  },
+  {
+    "timestamp": "19:15:34",
+    "phase": "Phase 2",
+    "description": "Writes tested during mongo3 partition",
+    "details": {
+      "w1": {
+        "ok": true,
+        "lat_ms": 31.43,
+        "msg": "Success (Acknowledged)"
+      },
+      "w_majority": {
+        "ok": false,
+        "lat_ms": 3016.02,
+        "msg": "WriteTimeout: Quorum not achieved within 3000ms"
+      },
+      "w_all": {
+        "ok": false,
+        "lat_ms": 3024.5,
+        "msg": "WriteTimeout: Quorum not achieved within 3000ms"
+      }
+    }
+  },
+  {
+    "timestamp": "19:15:34",
+    "phase": "Phase 3",
+    "description": "Reconnected mongo3 to lab8_mongo-net",
+    "details": {}
+  },
+  {
+    "timestamp": "19:15:44",
+    "phase": "Phase 3",
+    "description": "Cluster recovered after reconnecting mongo3",
+    "details": {
+      "primary": "mongo2:27018",
+      "members": [
+        {
+          "name": "mongo1:27017",
+          "stateStr": "SECONDARY",
+          "health": 1.0,
+          "uptime": 257
+        },
+        {
+          "name": "mongo2:27018",
+          "stateStr": "PRIMARY",
+          "health": 1.0,
+          "uptime": 266
+        },
+        {
+          "name": "mongo3:27019",
+          "stateStr": "SECONDARY",
+          "health": 1.0,
+          "uptime": 3
+        }
+      ]
+    }
+  },
+  {
+    "timestamp": "19:15:45",
+    "phase": "Phase 4",
+    "description": "Disconnected both secondaries (mongo1, mongo3)",
+    "details": {}
+  },
+  {
+    "timestamp": "19:15:55",
+    "phase": "Phase 4",
+    "description": "Dual partition write and stepdown observed",
+    "details": {
+      "w_majority_timeout": "WriteTimeout: Quorum not achieved within 3000ms",
+      "w1_result": "Success (Acknowledged)",
+      "stepped_down": true,
+      "stepdown_time": "19:15:55"
+    }
+  },
+  {
+    "timestamp": "19:15:56",
+    "phase": "Phase 5",
+    "description": "Reconnected mongo1 and mongo3",
+    "details": {}
+  },
+  {
+    "timestamp": "19:16:08",
+    "phase": "Phase 5",
+    "description": "Full cluster recovery completed",
+    "details": {
+      "new_primary": "mongo3:27019",
+      "final_members": [
+        {
+          "name": "mongo1:27017",
+          "stateStr": "SECONDARY",
+          "health": 1.0,
+          "uptime": 11
+        },
+        {
+          "name": "mongo2:27018",
+          "stateStr": "SECONDARY",
+          "health": 1.0,
+          "uptime": 7
+        },
+        {
+          "name": "mongo3:27019",
+          "stateStr": "PRIMARY",
+          "health": 1.0,
+          "uptime": 290
+        }
+      ],
+      "write_verification": {
+        "ok": true,
+        "lat_ms": 77.32
+      }
+    }
+  }
+]

@@ -1,0 +1,67 @@
+===========================================================================
+   LAB 8.2 TRY IT YOURSELF: PRIORITY-BASED ELECTION PREDICTION
+===========================================================================
+
+===========================================================================
+  Step 1: Configure Replica Set with Distinct Priority Values
+===========================================================================
+Current Active Primary: mongo1:27017
+Eligible Secondaries : ['mongo2:27018', 'mongo3:27019']
+
+Assigning Priority Values:
+  - Target Secondary: mongo2:27018 -> PRIORITY 10 (Highest)
+  - Other Secondary : mongo3:27019 -> PRIORITY 1 (Default)
+  - Current Primary : mongo1:27017 -> PRIORITY 2
+[OK] replSetReconfig successfully executed: {'ok': 1.0, '$clusterTime': {'clusterTime': Timestamp(1791388097, 1), 'signature': {'hash': b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00', 'keyId': 0}}, 'operationTime': Timestamp(1791388097, 1)}
+
+===========================================================================
+  Step 2: Formal Election Prediction
+===========================================================================
+========================= HYPOTHESIS & PREDICTION =========================
+PREDICTION:
+  Secondary 'mongo2:27018' WILL BE ELECTED as the new PRIMARY.
+
+TECHNICAL JUSTIFICATION:
+  1. MongoDB Replica Set Election Protocol:
+     - MongoDB replica sets utilize a Raft-inspired consensus election algorithm.
+     - Each member has a configurable 'priority' (0 to 1000). Members with higher 
+       priority values are considered preferred candidates for Primary.
+  2. Election Criteria:
+     - When an election is triggered, secondaries verify that their oplog is 
+       up-to-date with the highest committed optime.
+     - Among candidates that have an up-to-date oplog and can communicate with a 
+       majority, the candidate with the HIGHEST PRIORITY (Priority = 10) takes 
+       precedence and wins the election.
+  3. Prediction Expectation:
+     - Current Primary (mongo1:27017) will step down.
+     - Node 'mongo2:27018' (Priority 10) will be favored over other nodes (Priority 1).
+===========================================================================
+
+===========================================================================
+  Step 3: Force Failover (rs.stepDown) and Verify Election Outcome
+===========================================================================
+Triggering stepdown on primary mongo1:27017 for 30 seconds...
+[OK] Stepdown triggered successfully.
+Waiting 12 seconds for election and priority convergence...
+
+--- Post-Election Replica Set Member States ---
+Member Host               | State / Role    | Priority   | Health
+-----------------------------------------------------------------
+mongo1:27017              | SECONDARY       | 2.0        | 1.0
+mongo2:27018              | PRIMARY         | 10.0       | 1.0
+mongo3:27019              | SECONDARY       | 1.0        | 1.0
+mongo-arbiter:27020       | ARBITER         | 0.0        | 1.0
+
+===========================================================================
+  Step 4: Verification of Prediction vs Actual Result
+===========================================================================
+  Predicted Primary : mongo2:27018
+  Actual New Primary: mongo2:27018
+
+  >> [VERIFICATION SUCCESSFUL] <<
+  The secondary with the highest priority (mongo2:27018, Priority=10)
+  was elected as PRIMARY, exactly as predicted by MongoDB election mechanics!
+
+===========================================================================
+  Lab 8.2 Try It Yourself Complete
+===========================================================================
