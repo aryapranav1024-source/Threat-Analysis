@@ -4097,11 +4097,6 @@ function renderChatbotView(dash) {
     <div style="background:linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%);border:1px solid rgba(14, 165, 233, 0.35);border-radius:var(--radius-md);padding:20px;margin-bottom:20px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
         <div>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-            <span class="badge" style="background:rgba(14, 165, 233, 0.2);color:var(--cyan);border:1px solid var(--cyan);font-weight:700;">FINAL ASSESSMENT</span>
-            <span class="badge" style="background:rgba(16, 185, 129, 0.15);color:var(--green);border:1px solid var(--green);">MongoDB Vector RAG</span>
-            <span class="badge" style="background:rgba(139, 92, 246, 0.15);color:var(--purple);border:1px solid var(--purple);">Autonomous Scanner</span>
-          </div>
           <h2 style="font-size:20px;color:var(--heading);margin:0 0 6px 0;font-weight:700;">Multi-Platform Threat Intelligence AI & Mitigation Bot</h2>
           <p style="font-size:13px;color:var(--text-muted);margin:0;max-width:850px;">
             Synthesis of <strong>Exercises 1 - 18</strong>. Grounded question answering covering Anticipated, Active, Evolving, and Resolved threats across Windows, Linux, macOS, Android, and iOS. Features an autonomous background scanner that audits host misconfigurations and applies mitigations with human-in-the-loop confirmation.
