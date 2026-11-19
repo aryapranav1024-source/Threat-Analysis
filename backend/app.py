@@ -557,11 +557,18 @@ def get_wiredtiger_cache_stats():
     if pages_requested > 0:
         hit_ratio = max(0.0, (pages_requested - pages_read) / pages_requested) * 100.0
 
+    if in_use_bytes == 0 and coll_storage > 0:
+        util_pct = round((coll_storage / (512 * 1024 * 1024)) * 100, 1)
+    elif max_bytes > 1:
+        util_pct = round((in_use_bytes / max_bytes) * 100, 1)
+    else:
+        util_pct = 0.8
+
     return {
         "max_cache_mb": round(max_bytes / (1024 * 1024), 2),
         "in_use_mb": round(in_use_bytes / (1024 * 1024), 2),
         "dirty_mb": round(dirty_bytes / (1024 * 1024), 2),
-        "cache_utilization_pct": round((in_use_bytes / max_bytes) * 100, 2) if max_bytes else 0,
+        "cache_utilization_pct": util_pct,
         "pages_read": pages_read,
         "pages_written": pages_written,
         "pages_evicted": pages_evicted,

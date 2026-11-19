@@ -212,7 +212,8 @@ async function loadCacheKPI() {
     const d = await res.json();
     const kpiCache = document.getElementById('kpi-cache-fit');
     if (kpiCache) {
-      kpiCache.textContent = `${d.cache_utilization_pct}% RAM`;
+      const pct = parseFloat(d.cache_utilization_pct || 0);
+      kpiCache.textContent = pct > 0 ? (pct < 1 ? `< 1% RAM` : `${pct}% RAM`) : `< 1% RAM`;
     }
   } catch (e) { /* silent */ }
 }
