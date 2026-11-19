@@ -18,6 +18,7 @@ import random
 import hashlib
 import platform
 import subprocess
+import requests
 from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Query
@@ -28,6 +29,50 @@ from config.connection import get_db
 router = APIRouter(prefix="/api/chatbot", tags=["AI Threat Intel Chatbot & Mitigation"])
 
 db = get_db("cti_platform")
+
+# ---------------------------------------------------------------------------
+# Ollama & LLM Configuration
+# ---------------------------------------------------------------------------
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+SYSTEM_PROMPT = (
+    "You are a Cybersecurity Threat Intelligence AI Assistant. "
+    "Your mission is to provide precise, actionable guidance on cybersecurity threats. "
+    "Always state whether the threat is Anticipated, Active, Evolving, or Resolved. "
+    "Detail target platforms (Windows, Linux, macOS, Android, iOS), affected versions, "
+    "attack vectors, mitigation steps, and detection methods. Ground your answer in the provided context."
+)
+
+def check_ollama_online() -> bool:
+    """Check if local Ollama daemon is reachable."""
+    try:
+        r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=1.5)
+        return r.status_code == 200
+    except Exception:
+        return False
+
+def call_ollama(prompt: str, context: str, history: list) -> Optional[str]:
+    """Call Ollama LLM endpoint with RAG context."""
+    messages = [{"role": "system", "content": f"{SYSTEM_PROMPT}\n\nThreat Context:\n{context}"}]
+    for h in history[-4:]:
+        messages.append({"role": "user", "content": h.get("user", "")})
+        messages.append({"role": "assistant", "content": h.get("assistant", "")})
+    messages.append({"role": "user", "content": prompt})
+
+    try:
+        resp = requests.post(
+            f"{OLLAMA_BASE_URL}/api/chat",
+            json={"model": OLLAMA_MODEL, "messages": messages, "stream": False},
+            timeout=15
+        )
+        if resp.status_code == 200:
+            return resp.json()["message"]["content"]
+    except Exception:
+        pass
+    return None
 
 # ---------------------------------------------------------------------------
 # Models
@@ -491,6 +536,24 @@ async def list_threats(
     return {"threats": docs, "count": len(docs)}
 
 
+@router.get("/ollama-status")
+async def get_ollama_status():
+    online = check_ollama_online()
+    models = []
+    if online:
+        try:
+            r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=1.5)
+            models = [m.get("name") for m in r.json().get("models", [])]
+        except Exception:
+            pass
+    return {
+        "online": online,
+        "base_url": OLLAMA_BASE_URL,
+        "configured_model": OLLAMA_MODEL,
+        "available_models": models
+    }
+
+
 @router.post("/chat")
 async def chat_interaction(req: ChatMessageRequest):
     auto_seed_threat_data()
@@ -525,8 +588,20 @@ async def chat_interaction(req: ChatMessageRequest):
         for s, d in top_matches
     ]
 
-    # Generate synthesized response based on retrieved threat context
-    if top_matches:
+    # Load conversation history
+    session = db["chat_sessions"].find_one({"session_id": req.session_id})
+    history = session.get("history", []) if session else []
+
+    # Build context string
+    context_text = "\n\n".join([f"[{d['title']} - {d['platform'].upper()} - {d['status'].upper()}]\n{d['content']}" for _, d in top_matches])
+
+    # Try Ollama first (Exercise-17: RAG + local SLM)
+    ollama_response = call_ollama(req.message, context_text, history)
+    
+    if ollama_response:
+        response_text = ollama_response
+        llm_engine = f"Ollama ({OLLAMA_MODEL})"
+    elif top_matches:
         best_doc = top_matches[0][1]
         response_text = (
             f"### Threat Intelligence Analysis: {best_doc['title']}\n\n"
@@ -540,11 +615,13 @@ async def chat_interaction(req: ChatMessageRequest):
             f"2. Apply official vendor patches and harden baseline configurations.\n"
             f"3. Run an automated platform audit using the **Active Vulnerability Scanner** tab."
         )
+        llm_engine = "Grounded Threat Analysis RAG (Ollama offline fallback)"
     else:
         response_text = (
             f"No specific threat documents matched your query filters (`Platform: {req.platform}`, `Status: {req.status_filter}`). "
             "Try broadening the platform filter or asking about a known CVE (e.g. CVE-2025-21391, BlackBasta, Dirty Pipe)."
         )
+        llm_engine = "Knowledge Base Filter (No matches)"
 
     # Persist session history
     db["chat_sessions"].update_one(
@@ -553,6 +630,7 @@ async def chat_interaction(req: ChatMessageRequest):
             "history": {
                 "user": req.message,
                 "assistant": response_text,
+                "llm_engine": llm_engine,
                 "timestamp": datetime.now(timezone.utc)
             }
         }},
@@ -564,6 +642,7 @@ async def chat_interaction(req: ChatMessageRequest):
         "session_id": req.session_id,
         "response": response_text,
         "sources": sources,
+        "llm_engine": llm_engine,
         "latency_ms": latency
     }
 

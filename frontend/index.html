@@ -886,6 +886,7 @@
                 <div style="display:flex;align-items:center;gap:8px;">
                   <div class="status-dot" style="background:var(--green);"></div>
                   <span style="font-size:12px;font-weight:600;color:var(--heading);">Threat Intelligence RAG Session</span>
+                  <span id="ollama-status-badge" class="badge" style="font-size:10px;padding:2px 6px;background:rgba(255,255,255,0.06);border:1px solid var(--border-card);color:var(--cyan);">Ollama SLM Ready</span>
                 </div>
                 <button onclick="clearChatbotHistory()" class="btn" style="font-size:11px;padding:4px 8px;background:transparent;border:1px solid var(--border-card);color:var(--text-muted);cursor:pointer;">
                   Clear History
@@ -1026,7 +1027,8 @@
         window.chatbotMessages.push({
           role: 'assistant',
           text: data.response,
-          sources: data.sources
+          sources: data.sources,
+          llm_engine: data.llm_engine
         });
       } catch (err) {
         window.chatbotMessages.push({
@@ -1047,7 +1049,7 @@
         const bg = isUser ? 'rgba(14, 165, 233, 0.15)' : 'rgba(255, 255, 255, 0.04)';
         const border = isUser ? '1px solid rgba(14, 165, 233, 0.4)' : '1px solid var(--border-card)';
         const align = isUser ? 'flex-end' : 'flex-start';
-        const label = isUser ? '👤 You' : '🛡️ Threat Intel AI';
+        const label = isUser ? '👤 You' : `🛡️ Threat Intel AI ${m.llm_engine ? `<span style="font-size:9px;color:var(--cyan);margin-left:6px;font-family:var(--font-mono);">[${m.llm_engine}]</span>` : ''}`;
 
         let sourcesHtml = '';
         if (m.sources && m.sources.length) {
@@ -1191,8 +1193,25 @@
       }
     }
 
-    // Refresh KPI counts on load
+    // Refresh KPI counts and check Ollama connectivity
     document.addEventListener('DOMContentLoaded', () => {
+      fetch('/api/chatbot/ollama-status')
+        .then(r => r.json())
+        .then(st => {
+          const el = document.getElementById('ollama-status-badge');
+          if (el) {
+            if (st.online) {
+              el.innerHTML = `● Ollama: Online (${st.configured_model || 'llama3'})`;
+              el.style.color = 'var(--green)';
+              el.style.borderColor = 'var(--green)';
+            } else {
+              el.innerHTML = `● Ollama: Standby (Grounded RAG)`;
+              el.style.color = 'var(--cyan)';
+            }
+          }
+        })
+        .catch(() => {});
+
       fetch('/api/chatbot/dashboard')
         .then(r => r.json())
         .then(dash => {
