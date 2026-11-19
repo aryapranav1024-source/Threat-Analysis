@@ -54,8 +54,29 @@ def check_ollama_online() -> bool:
     except Exception:
         return False
 
+def get_active_ollama_model() -> str:
+    """Auto-detect available model in Ollama or use configured model."""
+    try:
+        r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=1.5)
+        if r.status_code == 200:
+            models = [m.get("name") for m in r.json().get("models", [])]
+            if not models:
+                return OLLAMA_MODEL
+            if OLLAMA_MODEL in models:
+                return OLLAMA_MODEL
+            # Match partial name like llama3 in llama3:latest
+            base = OLLAMA_MODEL.split(":")[0]
+            for m in models:
+                if base in m:
+                    return m
+            return models[0]
+    except Exception:
+        pass
+    return OLLAMA_MODEL
+
 def call_ollama(prompt: str, context: str, history: list) -> Optional[str]:
     """Call Ollama LLM endpoint with RAG context."""
+    active_model = get_active_ollama_model()
     messages = [{"role": "system", "content": f"{SYSTEM_PROMPT}\n\nThreat Context:\n{context}"}]
     for h in history[-4:]:
         messages.append({"role": "user", "content": h.get("user", "")})
@@ -65,8 +86,8 @@ def call_ollama(prompt: str, context: str, history: list) -> Optional[str]:
     try:
         resp = requests.post(
             f"{OLLAMA_BASE_URL}/api/chat",
-            json={"model": OLLAMA_MODEL, "messages": messages, "stream": False},
-            timeout=15
+            json={"model": active_model, "messages": messages, "stream": False},
+            timeout=60
         )
         if resp.status_code == 200:
             return resp.json()["message"]["content"]
