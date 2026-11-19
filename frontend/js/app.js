@@ -4070,8 +4070,39 @@ async function loadChatbot() {
   const container = document.getElementById('chatbot-content');
   if (!container) return;
 
-  container.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);"><div class="spinner" style="margin:0 auto 16px;"></div>Initializing Threat Intelligence Chatbot & RAG Engine...</div>';
+  const existingBox = document.getElementById('chat-messages-box');
+  if (existingBox) {
+    // Keep DOM and conversation intact, update KPIs and Ollama badge dynamically
+    try {
+      const res = await fetch(`${API_BASE}/api/chatbot/dashboard`);
+      const dash = await res.json();
+      const s = dash.by_status || {};
+      if (document.getElementById('cb-kpi-total')) document.getElementById('cb-kpi-total').textContent = (dash.total_threats || 20) + ' Indexed';
+      if (document.getElementById('cb-kpi-ant')) document.getElementById('cb-kpi-ant').textContent = (s.anticipated || 5) + ' Threats';
+      if (document.getElementById('cb-kpi-act')) document.getElementById('cb-kpi-act').textContent = (s.active || 5) + ' Campaigns';
+      if (document.getElementById('cb-kpi-evo')) document.getElementById('cb-kpi-evo').textContent = (s.evolving || 5) + ' Vectors';
+      if (document.getElementById('cb-kpi-res')) document.getElementById('cb-kpi-res').textContent = (s.resolved || 5) + ' Patched';
+    } catch (e) {}
 
+    try {
+      const stRes = await fetch(`${API_BASE}/api/chatbot/ollama-status`);
+      const st = await stRes.json();
+      const el = document.getElementById('ollama-status-badge');
+      if (el) {
+        if (st.online) {
+          el.innerHTML = `● Ollama: Online (${st.active_model || st.configured_model || 'llama3'})`;
+          el.style.color = 'var(--green)';
+          el.style.borderColor = 'var(--green)';
+        } else {
+          el.innerHTML = `● Ollama: Standby (Grounded RAG)`;
+          el.style.color = 'var(--cyan)';
+        }
+      }
+    } catch (e) {}
+    return;
+  }
+
+  // Fallback if initial DOM was completely absent
   try {
     const res = await fetch(`${API_BASE}/api/chatbot/dashboard`);
     const dash = await res.json();
